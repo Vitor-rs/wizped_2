@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  RIBBON XML — Wizped Office v2
+  
+  NOVIDADE v2: Botão "Importar Cadastro" no grupo Alunos
+  
+  COMO USAR:
+  1. Feche o .xlsm no Excel
+  2. Abra o Custom UI Editor (Office RibbonX Editor)
+  3. Cole este XML (substitua o anterior)
+  4. Salve e feche → reabra no Excel
+-->
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="tabWizped" label="Wizped" insertAfterMso="TabHome">
+        
+        <group id="grpAlunos" label="Alunos">
+          <button id="btnGerenciarAlunos" label="Gerenciar Alunos" size="large"
+                  onAction="OnGerenciarAlunos" imageMso="ContactPictureMenu"
+                  screentip="Abrir formulário de gerenciamento" />
+          <button id="btnNovoAluno" label="Novo Aluno" size="large"
+                  onAction="OnNovoAluno" imageMso="ContactNew"
+                  screentip="Cadastrar novo aluno" />
+          <separator id="sepAlunos1" />
+          <button id="btnImportarCadastro" label="Importar Cadastro" size="large"
+                  onAction="OnImportarCadastro" imageMso="ImportTextFile"
+                  screentip="Importar relatório do Sponte"
+                  supertip="Importa dados de alunos do PDF 'Dados do Cadastro' do Sponte Web. Merge inteligente com alunos existentes." />
+        </group>
+
+        <group id="grpFichas" label="Fichas de Frequência">
+          <button id="btnGerarFichas" label="Gerar Fichas" size="large"
+                  onAction="OnGerarFichas" imageMso="PrintPreviewClose"
+                  screentip="Gerar fichas de frequência" />
+        </group>
+
+        <group id="grpDados" label="Dados">
+          <button id="btnMostrarPlanilhas" label="Mostrar BD" size="normal"
+                  onAction="OnMostrarPlanilhas" imageMso="ViewNormalViewExcel"
+                  screentip="Mostrar planilhas BD_*" />
+          <button id="btnEsconderPlanilhas" label="Esconder BD" size="normal"
+                  onAction="OnEsconderPlanilhas" imageMso="SheetProtect"
+                  screentip="Esconder planilhas BD_*" />
+        </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

@@ -1,0 +1,88 @@
+@startuml
+
+!theme plain
+hide circle
+skinparam linetype ortho
+
+entity "BD_Alunos" as Alunos {
+  *ID : Integer <<PK>> (SponteWeb)
+  --
+  Nome : String
+  *ID_Status : Integer <<FK>>
+  *ID_Contrato : Integer <<FK>>
+  ID_Livro : Integer <<FK>>
+  ID_Experiencia : Integer <<FK>>
+  ID_Modalidade : Integer <<FK>>
+  VIP : Boolean
+  ID_Professor : Integer <<FK>>
+  Data_Inicio : Date
+  Obs : String
+}
+
+entity "BD_Agenda" as Agenda {
+  *ID : Integer <<PK>>
+  --
+  *ID_Aluno : Integer <<FK>>
+  Hora : Time
+  Dia : String
+}
+
+entity "BD_Livros" as Livros {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+  Ordem : Integer
+  ID_Experiencia_Padrao : Integer <<FK>>
+  Ativo : Boolean
+}
+
+entity "BD_Experiencia" as Experiencia {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+}
+
+entity "BD_Modalidades" as Modalidades {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+}
+
+entity "BD_Status" as Status {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+}
+
+entity "BD_Contrato" as Contrato {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+}
+
+entity "BD_Professores" as Professores {
+  *ID : Integer <<PK>>
+  --
+  Nome : String
+}
+
+entity "BD_Horarios" as Horarios {
+  *ID : Integer <<PK>>
+  --
+  Hora : Time
+}
+
+' Relationships
+Alunos }o..|| Status
+Alunos }o..|| Contrato
+Alunos }o..|| Livros
+Alunos }o..|| Experiencia
+Alunos }o..|| Modalidades
+Alunos }o..|| Professores
+
+Agenda }o..|| Alunos : "Aluno tem Horários"
+Agenda }o..|| Horarios : "Valida Hora"
+
+Livros }o..|| Experiencia : "Exp. Padrão"
+
+@enduml
