@@ -4,7 +4,7 @@ from openpyxl.utils import get_column_letter
 import os
 
 FILE_NAME = "ficha_freq_gerador.xlsx"
-SHEET_NAME = "BP_FichaMensal"
+SHEET_NAME = "BD_FichaMensal"
 TABLE_NAME = "Tbl_FichaMensal"
 
 
