@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  RIBBON XML — Wizped Office v3
+  RIBBON XML — Wizped Office v4
   
   CALLBACKS definidos em: VBA_03_RibbonCallbacks.bas (mod_RibbonCallbacks)
   
@@ -15,55 +15,88 @@
     <tabs>
       <tab id="tabWizped" label="Wizped" insertAfterMso="TabHome">
         
-        <group id="grpAlunos" label="Alunos">
+        <!-- ═══════════════════════════════════ -->
+        <!-- GRUPO 1: Cadastro                   -->
+        <!-- ═══════════════════════════════════ -->
+        <group id="grpCadastro" label="Cadastro">
           <button id="btnGerenciar"
                   label="Gerenciar Alunos"
                   size="large"
-                  imageMso="ContactAddressBookDialog"
+                  imageMso="ContactsModule"
                   onAction="OnGerenciarAlunos"
-                  screentip="Abrir formulario de alunos"
-                  supertip="Abre o formulario completo para buscar, cadastrar, editar e excluir alunos."/>
+                  screentip="Abrir formulário de alunos"
+                  supertip="Abre o formulário completo para buscar, cadastrar, editar e excluir alunos."/>
+          <separator id="sepCadastro1"/>
           <button id="btnNovo"
                   label="Novo Aluno"
                   size="normal"
-                  imageMso="AddContact"
+                  imageMso="GroupContactNew"
                   onAction="OnNovoAluno"
                   screentip="Criar novo aluno"
-                  supertip="Abre o formulario ja em modo de criacao."/>
+                  supertip="Abre o formulário já em modo de criação de novo aluno."/>
           <button id="btnImportar"
                   label="Importar Cadastro"
                   size="normal"
-                  imageMso="ImportSavedImports"
+                  imageMso="ImportTextFile"
                   onAction="OnImportarCadastro"
                   screentip="Importar alunos do Sponte"
-                  supertip="Importa dados de alunos a partir de relatorio PDF do SponteWeb."/>
+                  supertip="Importa dados de alunos a partir de relatório CSV exportado do SponteWeb."/>
         </group>
         
-        <group id="grpFichas" label="Fichas">
+        <!-- ═══════════════════════════════════ -->
+        <!-- GRUPO 2: Relatórios                 -->
+        <!-- ═══════════════════════════════════ -->
+        <group id="grpRelatorios" label="Relatórios">
           <button id="btnFichas"
-                  label="Gerar Fichas"
+                  label="Fichas de Frequência"
                   size="large"
-                  imageMso="CreateReport"
+                  imageMso="CreateReportFromWizard"
                   onAction="OnGerarFichas"
-                  screentip="Gerar fichas de frequencia"
-                  supertip="Gera fichas mensais de frequencia para os alunos ativos."/>
+                  screentip="Gerar fichas de frequência"
+                  supertip="Gera fichas mensais de frequência para os alunos ativos."/>
+          <separator id="sepRelatorios1"/>
+          <button id="btnDashboard"
+                  label="Dashboard"
+                  size="normal"
+                  imageMso="ChartTypeAllChartTypes"
+                  onAction="OnDashboard"
+                  screentip="Painel de indicadores"
+                  supertip="Abre o painel com métricas e gráficos dos alunos. (Em desenvolvimento)"/>
         </group>
         
-        <group id="grpPlanilhas" label="Planilhas">
+        <!-- ═══════════════════════════════════ -->
+        <!-- GRUPO 3: Ferramentas                -->
+        <!-- ═══════════════════════════════════ -->
+        <group id="grpFerramentas" label="Ferramentas">
           <button id="btnMostrar"
-                  label="Mostrar Dados"
+                  label="Mostrar BD"
                   size="normal"
-                  imageMso="TableShowHide"
+                  imageMso="GroupViewShowHide"
                   onAction="OnMostrarPlanilhas"
                   screentip="Mostrar planilhas de dados"
-                  supertip="Torna visiveis todas as planilhas BD_* (tabelas de dominio)."/>
+                  supertip="Torna visíveis todas as planilhas BD_* (tabelas de domínio)."/>
           <button id="btnEsconder"
-                  label="Esconder Dados"
+                  label="Ocultar BD"
                   size="normal"
-                  imageMso="TableHideColumns"
+                  imageMso="SheetProtect"
                   onAction="OnEsconderPlanilhas"
-                  screentip="Esconder planilhas de dados"
-                  supertip="Oculta todas as planilhas BD_* para evitar edicao acidental."/>
+                  screentip="Ocultar planilhas de dados"
+                  supertip="Oculta todas as planilhas BD_* para evitar edição acidental."/>
+          <separator id="sepFerr1"/>
+          <button id="btnRecriar"
+                  label="Recriar Formulário"
+                  size="normal"
+                  imageMso="FormDesignMode"
+                  onAction="OnRecriarFormulario"
+                  screentip="Recriar o formulário de alunos"
+                  supertip="Deleta e recria o frmAlunos do zero. Útil após atualizar o VBA_01_CriarFormulario."/>
+          <button id="btnSobre"
+                  label="Sobre"
+                  size="normal"
+                  imageMso="Info"
+                  onAction="OnSobre"
+                  screentip="Informações do sistema"
+                  supertip="Exibe a versão e detalhes do Wizped Office."/>
         </group>
         
       </tab>
