@@ -1085,9 +1085,8 @@ End Sub
 '  PREVIEW DO TIPO (tempo real)
 ' ===========================================================
 
-Private Sub cmbExperiencia_Change(): AtualizarTipoPreview: End Sub
-Private Sub cmbModalidade_Change(): AtualizarTipoPreview: End Sub
-Private Sub chkVIP_Change(): AtualizarTipoPreview: End Sub
+' NOTA: cmbExperiencia_Change, cmbModalidade_Change e chkVIP_Change
+' estao na secao DIRTY FLAG abaixo (combinados com AtualizarTipoPreview)
 
 Private Sub AtualizarTipoPreview()
     Dim tipo As String: tipo = ""
@@ -1226,9 +1225,9 @@ Private Sub txtObsHist_Enter(): FecharOverlays: End Sub
 ' === DIRTY FLAG: marcar formulario como modificado ===
 Private Sub txtNome_Change(): mFormModificado = True: End Sub
 Private Sub txtObs_Change(): mFormModificado = True: End Sub
-Private Sub chkVIP_Change(): mFormModificado = True: End Sub
-Private Sub cmbExperiencia_Change(): mFormModificado = True: End Sub
-Private Sub cmbModalidade_Change(): mFormModificado = True: End Sub
+Private Sub chkVIP_Change(): mFormModificado = True: AtualizarTipoPreview: End Sub
+Private Sub cmbExperiencia_Change(): mFormModificado = True: AtualizarTipoPreview: End Sub
+Private Sub cmbModalidade_Change(): mFormModificado = True: AtualizarTipoPreview: End Sub
 Private Sub cmbStatus_Change(): mFormModificado = True: End Sub
 
 ' === CONTRATO: auto-data ao mudar para Matricula/Rematricula ===
