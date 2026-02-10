@@ -363,7 +363,11 @@ Private Sub ProcessarCSV(csvPath As String)
         ws.Cells(lastRow, 1).Value = csvID         ' ID
         ws.Cells(lastRow, 2).Value = csvNome        ' Nome
         ws.Cells(lastRow, 3).Value = csvStatusID    ' Status
-        ' Demais campos ficam vazios (livro, experiência, etc.)
+        ws.Cells(lastRow, 4).Value = 1              ' Contrato: Matricula
+        ws.Cells(lastRow, 6).Value = 1              ' Experiencia: Interactive
+        ws.Cells(lastRow, 7).Value = 1              ' Modalidade: Presencial
+        ws.Cells(lastRow, 10).Value = Date           ' Data inicio: hoje
+        ws.Cells(lastRow, 10).NumberFormat = "dd/mm/yyyy"
         statsNovo = statsNovo + 1
         existingIDs(idStr) = lastRow
         

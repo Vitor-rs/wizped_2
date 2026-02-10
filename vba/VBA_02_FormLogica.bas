@@ -151,6 +151,11 @@ End Sub
 
 Private Sub cmbDia_Change()
     If mSuprimirDiaChange Then Exit Sub
+    
+    ' Guardar hora selecionada antes de limpar
+    Dim horaAnterior As String
+    If cmbHora.ListIndex >= 0 Then horaAnterior = cmbHora.Value Else horaAnterior = ""
+    
     cmbHora.Clear
     If cmbDia.ListIndex = -1 Then Exit Sub
     
@@ -164,6 +169,17 @@ Private Sub cmbDia_Change()
             cmbHora.AddItem CStr(h)
         End If
     Next h
+    
+    ' Restaurar hora anterior se disponivel no novo dia
+    If Len(horaAnterior) > 0 Then
+        Dim i As Long
+        For i = 0 To cmbHora.ListCount - 1
+            If CStr(cmbHora.List(i)) = horaAnterior Then
+                cmbHora.ListIndex = i
+                Exit For
+            End If
+        Next i
+    End If
     
     If cmbHora.ListCount = 0 Then
         Feedback "Nenhum horário disponível para " & cmbDia.Value & ".", True
@@ -705,13 +721,14 @@ Public Sub btnNovo_Click()
     txtID.Enabled = True
     
     ' Valores padrao
+    SelecionarCombo cmbExperiencia, 1  ' Interactive
     SelecionarCombo cmbStatus, 1       ' Ativo
     SelecionarCombo cmbContrato, 1     ' Matricula
     SelecionarCombo cmbModalidade, 1   ' Presencial
     txtData.Value = Format(Date, "dd/mm/yyyy")   ' Data de hoje
     
     txtID.SetFocus
-    Feedback "Novo Aluno. Status=Ativo, Contrato=Matricula, Data=hoje.", False
+    Feedback "Novo Aluno. Exp=Interactive, Mod=Presencial, Status=Ativo, Contrato=Matricula, Data=hoje.", False
 End Sub
 
 ' ===========================================================
@@ -767,8 +784,8 @@ Private Sub btnSalvar_Click()
     Dim nomeContratoAtual As String: nomeContratoAtual = ""
     Dim ehMatriculaOuRematricula As Boolean: ehMatriculaOuRematricula = False
     
+    ' Verificar se livro mudou (editando OU novo aluno com livro)
     If mEditando Then
-        ' Verificar se livro mudou
         Dim livroAntigoNum As Variant: livroAntigoNum = mLivroAntigoID
         Dim livroNovoNum As Variant: livroNovoNum = mIDLivroSelecionado
         
@@ -779,17 +796,20 @@ Private Sub btnSalvar_Click()
         ElseIf Not IsEmpty(livroAntigoNum) And Not IsEmpty(livroNovoNum) Then
             livroMudou = (CLng(livroAntigoNum) <> CLng(livroNovoNum))
         End If
-        
-        ' Verificar contrato
-        If cmbContrato.ListIndex >= 0 Then
-            nomeContratoAtual = CStr(cmbContrato.List(cmbContrato.ListIndex, 1))
-            Dim contratoLower As String: contratoLower = LCase(nomeContratoAtual)
-            If InStr(1, contratoLower, "matricula") > 0 Or _
-               InStr(1, contratoLower, "rematricula") > 0 Or _
-               InStr(1, contratoLower, "matr" & ChrW(237) & "cula") > 0 Or _
-               InStr(1, contratoLower, "rematr" & ChrW(237) & "cula") > 0 Then
-                ehMatriculaOuRematricula = True
-            End If
+    Else
+        ' Novo aluno: se tem livro selecionado, considerar como "mudou"
+        If Not IsEmpty(mIDLivroSelecionado) Then livroMudou = True
+    End If
+    
+    ' Verificar contrato (independente de mEditando)
+    If cmbContrato.ListIndex >= 0 Then
+        nomeContratoAtual = CStr(cmbContrato.List(cmbContrato.ListIndex, 1))
+        Dim contratoLower As String: contratoLower = LCase(nomeContratoAtual)
+        If InStr(1, contratoLower, "matricula") > 0 Or _
+           InStr(1, contratoLower, "rematricula") > 0 Or _
+           InStr(1, contratoLower, "matr" & ChrW(237) & "cula") > 0 Or _
+           InStr(1, contratoLower, "rematr" & ChrW(237) & "cula") > 0 Then
+            ehMatriculaOuRematricula = True
         End If
     End If
     
@@ -879,10 +899,26 @@ Private Sub btnSalvar_Click()
         Dim obsAuto As String
         Dim livAntNome As String: livAntNome = NomeLivroPorID(mLivroAntigoID)
         Dim livNovNome As String: livNovNome = NomeLivroPorID(mIDLivroSelecionado)
-        If Len(livAntNome) = 0 Then livAntNome = "(nenhum)"
-        obsAuto = nomeContratoAtual & ": " & livAntNome & " -> " & livNovNome
+        
+        ' Validacao: so mostrar "de -> para" se aluno tinha livro anterior
+        If Len(livAntNome) > 0 Then
+            obsAuto = nomeContratoAtual & ": " & livAntNome & " -> " & livNovNome
+        Else
+            obsAuto = nomeContratoAtual & ": " & livNovNome
+        End If
         
         InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoOcorrencia, dataEvento, obsAuto
+        
+        ' === AUTO ENTREGA DE MATERIAL ===
+        If Not IsEmpty(mIDLivroSelecionado) Then
+            Dim idTipoEntrega As Long
+            idTipoEntrega = BuscarTipoOcorrenciaPorNome("Entrega de Material")
+            If idTipoEntrega > 0 Then
+                Dim obsEntrega As String
+                obsEntrega = "Entrega de Material: " & livNovNome
+                InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoEntrega, dataEvento, obsEntrega
+            End If
+        End If
     End If
     
     ' Atualizar estado
@@ -1453,25 +1489,32 @@ Private Sub SalvarProfessoresAluno(idAluno As Long)
     Dim lastRow As Long: lastRow = wsVP.Cells(wsVP.Rows.Count, 1).End(xlUp).Row
     Dim rr As Long
     For rr = lastRow To 2 Step -1
-        If CLng(wsVP.Cells(rr, 2).Value) = idAluno Then wsVP.Rows(rr).Delete
+        If Not IsEmpty(wsVP.Cells(rr, 2).Value) Then
+            If CLng(wsVP.Cells(rr, 2).Value) = idAluno Then wsVP.Rows(rr).Delete
+        End If
     Next rr
     
     ' 2. Encontrar proximo ID
     lastRow = wsVP.Cells(wsVP.Rows.Count, 1).End(xlUp).Row
+    If lastRow < 1 Then lastRow = 1
     Dim maxID As Long: maxID = 0
     For rr = 2 To lastRow
-        If wsVP.Cells(rr, 1).Value > maxID Then maxID = wsVP.Cells(rr, 1).Value
+        If Not IsEmpty(wsVP.Cells(rr, 1).Value) Then
+            If wsVP.Cells(rr, 1).Value > maxID Then maxID = CLng(wsVP.Cells(rr, 1).Value)
+        End If
     Next rr
     
     ' 3. Inserir novos vinculos
+    Dim nextRow As Long: nextRow = lastRow + 1
+    If lastRow = 1 And IsEmpty(wsVP.Cells(2, 1).Value) Then nextRow = 2
     Dim i As Long
     For i = 0 To lstProfessores.ListCount - 1
         If lstProfessores.Selected(i) Then
             maxID = maxID + 1
-            Dim nl As Long: nl = ProximaLinhaVazia(wsVP, 1)
-            wsVP.Cells(nl, 1).Value = maxID
-            wsVP.Cells(nl, 2).Value = idAluno
-            wsVP.Cells(nl, 3).Value = CLng(lstProfessores.List(i, 0))
+            wsVP.Cells(nextRow, 1).Value = maxID
+            wsVP.Cells(nextRow, 2).Value = idAluno
+            wsVP.Cells(nextRow, 3).Value = CLng(lstProfessores.List(i, 0))
+            nextRow = nextRow + 1
         End If
     Next i
 End Sub
