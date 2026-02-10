@@ -1420,7 +1420,7 @@ Private Sub MostrarListBox(lst As MSForms.ListBox, contItens As Long)
     If contItens > 0 Then
         Dim alt As Single: alt = contItens * 16
         If alt < 32 Then alt = 32
-        If alt > 350 Then alt = 350
+        If alt > 220 Then alt = 220
         lst.Height = alt
         lst.Visible = True
     Else

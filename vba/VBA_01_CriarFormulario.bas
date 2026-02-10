@@ -317,9 +317,10 @@ Sub CriarFormulario()
         .Font.Name = FN: .Font.Size = FS
         .Visible = False: .BackColor = WHITE
         .SpecialEffect = 0: .BorderStyle = 1: End With
-    Set ctrl = frm.Controls.Add("Forms.ListBox.1", "lstLivroSugestoes")
-    With ctrl: .Left = 10: .Top = 150: .Width = 145: .Height = 180
-        .ColumnCount = 2: .ColumnWidths = "0;140"
+    ' lstLivroSugestoes movido para dentro de pg0 (ver abaixo)
+    Set ctrl = pg0.Controls.Add("Forms.ListBox.1", "lstLivroSugestoes")
+    With ctrl: .Left = 4: .Top = 88: .Width = 165: .Height = 200
+        .ColumnCount = 2: .ColumnWidths = "0;160"
         .Font.Name = FN: .Font.Size = FS
         .Visible = False: .BackColor = WHITE
         .SpecialEffect = 0: .BorderStyle = 1: End With
