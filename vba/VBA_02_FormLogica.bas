@@ -468,7 +468,7 @@ Private Sub FiltrarSugestoesLivros(termo As String)
         Next j
     Next i
     
-    ' Popular ListBox (max 20)
+    ' Popular ListBox (max 50)
     Dim cont As Long: cont = 0
     For i = 1 To nRes
         lstLivroSugestoes.AddItem
@@ -479,7 +479,7 @@ Private Sub FiltrarSugestoesLivros(termo As String)
             lstLivroSugestoes.List(cont, 1) = RealcarTexto(CStr(resultados(i, 2)), termo)
         End If
         cont = cont + 1
-        If cont >= 20 Then Exit For
+        If cont >= 50 Then Exit For
     Next i
     
     MostrarListBox lstLivroSugestoes, cont
@@ -917,6 +917,10 @@ Private Sub btnSalvar_Click()
                 Dim obsEntrega As String
                 obsEntrega = "Entrega de Material: " & livNovNome
                 InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoEntrega, dataEvento, obsEntrega
+            Else
+                MsgBox "Tipo 'Entrega de Material' nao encontrado em BD_TipoOcorrencia." & vbCrLf & _
+                       "Adicione este tipo para que o lancamento automatico funcione.", _
+                       vbExclamation, "Wizped Office"
             End If
         End If
     End If
@@ -1416,7 +1420,7 @@ Private Sub MostrarListBox(lst As MSForms.ListBox, contItens As Long)
     If contItens > 0 Then
         Dim alt As Single: alt = contItens * 16
         If alt < 32 Then alt = 32
-        If alt > 260 Then alt = 260
+        If alt > 350 Then alt = 350
         lst.Height = alt
         lst.Visible = True
     Else
