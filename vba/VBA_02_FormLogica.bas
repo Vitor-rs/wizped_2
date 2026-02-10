@@ -1508,9 +1508,10 @@ Private Sub SalvarProfessoresAluno(idAluno As Long)
         End If
     Next rr
     
-    ' 3. Inserir novos vinculos
+    ' 3. Inserir novos vinculos + concatenar nomes para col denormalizada
     Dim nextRow As Long: nextRow = lastRow + 1
     If lastRow = 1 And IsEmpty(wsVP.Cells(2, 1).Value) Then nextRow = 2
+    Dim nomesConcatenados As String: nomesConcatenados = ""
     Dim i As Long
     For i = 0 To lstProfessores.ListCount - 1
         If lstProfessores.Selected(i) Then
@@ -1519,8 +1520,21 @@ Private Sub SalvarProfessoresAluno(idAluno As Long)
             wsVP.Cells(nextRow, 2).Value = idAluno
             wsVP.Cells(nextRow, 3).Value = CLng(lstProfessores.List(i, 0))
             nextRow = nextRow + 1
+            ' Concatenar nome do professor
+            If Len(nomesConcatenados) > 0 Then nomesConcatenados = nomesConcatenados & ", "
+            nomesConcatenados = nomesConcatenados & lstProfessores.List(i, 1)
         End If
     Next i
+    
+    ' 4. Atualizar coluna denormalizada em BD_Alunos (col 9 = "Professores")
+    Dim wsAlunos As Worksheet: Set wsAlunos = ThisWorkbook.Sheets("BD_Alunos")
+    Dim rAluno As Long
+    For rAluno = 2 To wsAlunos.Cells(wsAlunos.Rows.Count, 1).End(xlUp).Row
+        If CLng(wsAlunos.Cells(rAluno, 1).Value) = idAluno Then
+            wsAlunos.Cells(rAluno, 9).Value = nomesConcatenados
+            Exit For
+        End If
+    Next rAluno
 End Sub
 
 ' ===========================================================
