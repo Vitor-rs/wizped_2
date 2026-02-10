@@ -1,3 +1,4 @@
+Attribute VB_Name = "mod_ImportarCadastro"
 ' ===========================================================
 ' MODULO: mod_ImportarCadastro
 ' PROPÓSITO: Importar dados de alunos do relatório Sponte PDF

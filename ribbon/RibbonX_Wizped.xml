@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  RIBBON XML — Wizped Office v2
+  RIBBON XML — Wizped Office v3
   
-  NOVIDADE v2: Botão "Importar Cadastro" no grupo Alunos
+  CALLBACKS definidos em: VBA_03_RibbonCallbacks.bas (mod_RibbonCallbacks)
   
   COMO USAR:
   1. Feche o .xlsm no Excel
@@ -16,34 +16,56 @@
       <tab id="tabWizped" label="Wizped" insertAfterMso="TabHome">
         
         <group id="grpAlunos" label="Alunos">
-          <button id="btnGerenciarAlunos" label="Gerenciar Alunos" size="large"
-                  onAction="OnGerenciarAlunos" imageMso="ContactPictureMenu"
-                  screentip="Abrir formulário de gerenciamento" />
-          <button id="btnNovoAluno" label="Novo Aluno" size="large"
-                  onAction="OnNovoAluno" imageMso="ContactNew"
-                  screentip="Cadastrar novo aluno" />
-          <separator id="sepAlunos1" />
-          <button id="btnImportarCadastro" label="Importar Cadastro" size="large"
-                  onAction="OnImportarCadastro" imageMso="ImportTextFile"
-                  screentip="Importar relatório do Sponte"
-                  supertip="Importa dados de alunos do PDF 'Dados do Cadastro' do Sponte Web. Merge inteligente com alunos existentes." />
+          <button id="btnGerenciar"
+                  label="Gerenciar Alunos"
+                  size="large"
+                  imageMso="ContactAddressBookDialog"
+                  onAction="OnGerenciarAlunos"
+                  screentip="Abrir formulario de alunos"
+                  supertip="Abre o formulario completo para buscar, cadastrar, editar e excluir alunos."/>
+          <button id="btnNovo"
+                  label="Novo Aluno"
+                  size="normal"
+                  imageMso="AddContact"
+                  onAction="OnNovoAluno"
+                  screentip="Criar novo aluno"
+                  supertip="Abre o formulario ja em modo de criacao."/>
+          <button id="btnImportar"
+                  label="Importar Cadastro"
+                  size="normal"
+                  imageMso="ImportSavedImports"
+                  onAction="OnImportarCadastro"
+                  screentip="Importar alunos do Sponte"
+                  supertip="Importa dados de alunos a partir de relatorio PDF do SponteWeb."/>
         </group>
-
-        <group id="grpFichas" label="Fichas de Frequência">
-          <button id="btnGerarFichas" label="Gerar Fichas" size="large"
-                  onAction="OnGerarFichas" imageMso="PrintPreviewClose"
-                  screentip="Gerar fichas de frequência" />
+        
+        <group id="grpFichas" label="Fichas">
+          <button id="btnFichas"
+                  label="Gerar Fichas"
+                  size="large"
+                  imageMso="CreateReport"
+                  onAction="OnGerarFichas"
+                  screentip="Gerar fichas de frequencia"
+                  supertip="Gera fichas mensais de frequencia para os alunos ativos."/>
         </group>
-
-        <group id="grpDados" label="Dados">
-          <button id="btnMostrarPlanilhas" label="Mostrar BD" size="normal"
-                  onAction="OnMostrarPlanilhas" imageMso="ViewNormalViewExcel"
-                  screentip="Mostrar planilhas BD_*" />
-          <button id="btnEsconderPlanilhas" label="Esconder BD" size="normal"
-                  onAction="OnEsconderPlanilhas" imageMso="SheetProtect"
-                  screentip="Esconder planilhas BD_*" />
+        
+        <group id="grpPlanilhas" label="Planilhas">
+          <button id="btnMostrar"
+                  label="Mostrar Dados"
+                  size="normal"
+                  imageMso="TableShowHide"
+                  onAction="OnMostrarPlanilhas"
+                  screentip="Mostrar planilhas de dados"
+                  supertip="Torna visiveis todas as planilhas BD_* (tabelas de dominio)."/>
+          <button id="btnEsconder"
+                  label="Esconder Dados"
+                  size="normal"
+                  imageMso="TableHideColumns"
+                  onAction="OnEsconderPlanilhas"
+                  screentip="Esconder planilhas de dados"
+                  supertip="Oculta todas as planilhas BD_* para evitar edicao acidental."/>
         </group>
-
+        
       </tab>
     </tabs>
   </ribbon>
