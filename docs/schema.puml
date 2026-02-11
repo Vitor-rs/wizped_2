@@ -4,8 +4,16 @@
 hide circle
 skinparam linetype ortho
 
+' ============================================================
+' WIZPED OFFICE — Schema do Modelo de Dados
+' Gerado a partir de analise de VBA + Python scripts
+' Atualizado: 2026-02-10
+' ============================================================
+
+' --- TABELA CENTRAL ---
+
 entity "BD_Alunos" as Alunos {
-  *ID : Integer <<PK>> (SponteWeb)
+  *ID_Aluno (SponteWeb) : Integer <<PK>>
   --
   Nome : String
   *ID_Status : Integer <<FK>>
@@ -14,21 +22,54 @@ entity "BD_Alunos" as Alunos {
   ID_Experiencia : Integer <<FK>>
   ID_Modalidade : Integer <<FK>>
   VIP : Boolean
-  ID_Professor : Integer <<FK>>
+  Professores : String <<denorm>>
   Data_Inicio : Date
   Obs : String
 }
 
+note right of Alunos
+  PK importada do Sponte Web.
+  "Professores" é texto desnormalizado
+  (nomes separados por vírgula),
+  sincronizado com BD_Vinculo_Professor.
+end note
+
+' --- AGENDA ---
+
 entity "BD_Agenda" as Agenda {
-  *ID : Integer <<PK>>
+  *ID_Agenda : Integer <<PK>>
   --
   *ID_Aluno : Integer <<FK>>
-  Hora : Time
+  Hora : String
   Dia : String
 }
 
+note right of Agenda
+  Hora: formato "HH:MM"
+  Dia: "2ª","3ª","4ª","5ª","6ª","Sáb"
+end note
+
+' --- LOOKUP TABLES ---
+
+entity "BD_Status" as Status {
+  *ID_Status : Integer <<PK>>
+  --
+  Nome : String
+}
+
+note bottom of Status
+  Ativo, Trancado,
+  Desistente, Interessado
+end note
+
+entity "BD_Contrato" as Contrato {
+  *ID_Contrato : Integer <<PK>>
+  --
+  Nome : String
+}
+
 entity "BD_Livros" as Livros {
-  *ID : Integer <<PK>>
+  *ID_Livro : Integer <<PK>>
   --
   Nome : String
   Ordem : Integer
@@ -37,52 +78,121 @@ entity "BD_Livros" as Livros {
 }
 
 entity "BD_Experiencia" as Experiencia {
-  *ID : Integer <<PK>>
+  *ID_Experiencia : Integer <<PK>>
   --
   Nome : String
+  Tipo_Ficha : String
 }
 
 entity "BD_Modalidades" as Modalidades {
-  *ID : Integer <<PK>>
+  *ID_Modalidade : Integer <<PK>>
   --
   Nome : String
-}
-
-entity "BD_Status" as Status {
-  *ID : Integer <<PK>>
-  --
-  Nome : String
-}
-
-entity "BD_Contrato" as Contrato {
-  *ID : Integer <<PK>>
-  --
-  Nome : String
+  Apelido : String
 }
 
 entity "BD_Professores" as Professores {
-  *ID : Integer <<PK>>
+  *ID_Professor : Integer <<PK>>
   --
   Nome : String
 }
 
+' --- HORARIOS (Tabela Matricial) ---
+
 entity "BD_Horarios" as Horarios {
-  *ID : Integer <<PK>>
+  *Hora : Time <<PK>>
   --
-  Hora : Time
+  2ª : String
+  3ª : String
+  4ª : String
+  5ª : String
+  6ª : String
+  Sáb : String
 }
 
-' Relationships
-Alunos }o..|| Status
-Alunos }o..|| Contrato
-Alunos }o..|| Livros
-Alunos }o..|| Experiencia
-Alunos }o..|| Modalidades
-Alunos }o..|| Professores
+note right of Horarios
+  Tabela matricial de disponibilidade.
+  Cada célula contém "X" (disponível)
+  ou vazio (indisponível).
+end note
 
-Agenda }o..|| Alunos : "Aluno tem Horários"
-Agenda }o..|| Horarios : "Valida Hora"
+' --- BRIDGE TABLE (N:N) ---
 
-Livros }o..|| Experiencia : "Exp. Padrão"
+entity "BD_Vinculo_Professor" as Vinculo {
+  *ID_Vinculo : Integer <<PK>>
+  --
+  *ID_Aluno : Integer <<FK>>
+  *ID_Professor : Integer <<FK>>
+}
+
+note right of Vinculo
+  Bridge table para relação N:N
+  entre Alunos e Professores.
+  Substituiu FK direta em BD_Alunos.
+end note
+
+' --- HISTORICO ---
+
+entity "BD_TipoOcorrencia" as TipoOcorr {
+  *ID_TipoOcorrencia : Integer <<PK>>
+  --
+  Descricao : String
+}
+
+note bottom of TipoOcorr
+  Matrícula, Rematrícula,
+  Entrega de Material
+end note
+
+entity "BD_Historico" as Historico {
+  *ID_Historico : Integer <<PK>>
+  --
+  *ID_Aluno : Integer <<FK>>
+  ID_Livro : Integer <<FK>>
+  *ID_TipoOcorrencia : Integer <<FK>>
+  Data : Date
+  Observacao : String
+}
+
+' --- FICHA MENSAL (TBD) ---
+
+entity "BD_FichaMensal" as FichaMensal {
+  *ID : Integer <<PK>>
+  --
+  .. estrutura TBD ..
+}
+
+note right of FichaMensal
+  Referenciada em rebuild_model.py.
+  Funcionalidade "Gerar Fichas" marcada
+  como "em desenvolvimento" no ribbon.
+end note
+
+' ============================================================
+' RELACIONAMENTOS
+' ============================================================
+
+' -- Alunos -> Lookups --
+Alunos }o--|| Status : ID_Status
+Alunos }o--|| Contrato : ID_Contrato
+Alunos }o--o| Livros : ID_Livro
+Alunos }o--o| Experiencia : ID_Experiencia
+Alunos }o--o| Modalidades : ID_Modalidade
+
+' -- Agenda -> Alunos, Horarios --
+Agenda }o--|| Alunos : ID_Aluno
+Agenda }o--|| Horarios : Hora
+
+' -- Livros -> Experiencia --
+Livros }o--o| Experiencia : ID_Experiencia_Padrao
+
+' -- Bridge: Aluno <-> Professor (N:N) --
+Vinculo }o--|| Alunos : ID_Aluno
+Vinculo }o--|| Professores : ID_Professor
+
+' -- Historico -> Alunos, Livros, TipoOcorrencia --
+Historico }o--|| Alunos : ID_Aluno
+Historico }o--o| Livros : ID_Livro
+Historico }o--|| TipoOcorr : ID_TipoOcorrencia
 
 @enduml
