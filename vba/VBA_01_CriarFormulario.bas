@@ -267,17 +267,17 @@ Sub CriarFormulario()
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtDataHist")
-    With ctrl: .Left = 4: .Top = y: .Width = 100: .Height = CH
+    With ctrl: .Left = 4: .Top = y: .Width = 110: .Height = CH ' Increased width for time
         .Font.Name = FN: .Font.Size = FS: .MaxLength = 16
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbTipoOcorrencia")
-    With ctrl: .Left = 114: .Top = y: .Width = 150: .Height = CH
+    With ctrl: .Left = 120: .Top = y: .Width = 150: .Height = CH ' Shifted left
         .ColumnCount = 2: .ColumnWidths = "0;145": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbLivroHist")
-    With ctrl: .Left = 274: .Top = y: .Width = 438: .Height = CH
-        .ColumnCount = 2: .ColumnWidths = "0;430": .BoundColumn = 1: .TextColumn = 2: .Style = 2
+    With ctrl: .Left = 280: .Top = y: .Width = 280: .Height = CH ' Reduced width
+        .ColumnCount = 2: .ColumnWidths = "0;270": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     y = y + CH + 4

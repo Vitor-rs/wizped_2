@@ -670,9 +670,32 @@ Private Sub CarregarAluno(linhaAluno As Long)
     chkVIP.Value = IIf(IsEmpty(vipVal) Or IsNull(vipVal), False, CBool(vipVal))
     
     SelecionarCombo cmbStatus, ws.Cells(linhaAluno, 3).Value
+    ' Default Status for Imported: if empty or invalid, default to Ativo (1)
+    If cmbStatus.ListIndex = -1 Then
+         ' Check if cell has text "Ativo/Desistente" and map it, otherwise default Ativo
+         Dim stVal As String: stVal = LCase(Trim(CStr(ws.Cells(linhaAluno, 3).Value)))
+         If stVal = "desistente" Then
+             SelecionarCombo cmbStatus, 2 ' Assuming 2 is Desistente
+         Else
+             SelecionarCombo cmbStatus, 1 ' Ativo
+         End If
+    End If
+
     mSuprimirContratoChange = True
     SelecionarCombo cmbContrato, ws.Cells(linhaAluno, 4).Value
+    ' Default Contrato: Matricula (1) if empty
+    If cmbContrato.ListIndex = -1 Then SelecionarCombo cmbContrato, 1
     mSuprimirContratoChange = False
+    
+    ' Default Modalidade: Presencial (1) if empty
+    If cmbModalidade.ListIndex = -1 Then SelecionarCombo cmbModalidade, 1
+
+    ' Default Experiencia: Interactive (1) (User didn't explicitly say, but usually Presencial needs it)
+    ' User said "presencial preenchido... sem necessidade de escolher".
+    ' Let's set Experiencia only if Modalidade is Presencial and Exp is empty.
+    If ValorCombo(cmbModalidade) = 1 And cmbExperiencia.ListIndex = -1 Then
+        SelecionarCombo cmbExperiencia, 1 ' Interactive default
+    End If
     
     ' Funcionarios/Professores (N:N via BD_Vinculo_Professor)
     CarregarFuncionariosAluno ws.Cells(linhaAluno, 1).Value
@@ -681,7 +704,8 @@ Private Sub CarregarAluno(linhaAluno As Long)
     If IsDate(ws.Cells(linhaAluno, 10).Value) Then
         txtData.Value = Format(ws.Cells(linhaAluno, 10).Value, "dd/mm/yyyy")
     Else
-        txtData.Value = ""
+        ' Default Data: Today if empty (imported)
+        txtData.Value = Format(Date, "dd/mm/yyyy")
     End If
     
     ' Obs
@@ -817,8 +841,24 @@ Private Sub btnSalvar_Click()
         End If
     End If
     
-    ' Se livro mudou E contrato eh matricula/rematricula -> confirmacao
-    If livroMudou And ehMatriculaOuRematricula Then
+    ' FORCE HISTORY LOGIC for Matricula/Rematricula even if book didn't change (e.g. imported student first save)
+    ' User said: "se o aluno ele é importado... salvar tudo isso, já vai para o histórico. O que aconteceu? Se é matrícula..."
+    ' So if it's Matricula/Rematricula, we should check if we need to log it.
+    ' We can use a heuristic: If History is empty? Or just always if it's a save action?
+    ' "Quando eu salvar tudo isso...".
+    ' Let's rely on ehMatriculaOuRematricula.
+    ' But we need to distinguish "Update" vs "New/Imported First Save".
+    ' If it's "Imported" (meaning we just defaulted fields), we should log.
+    ' How to know if we just defaulted fields?
+    ' Maybe just relax the "livroMudou" condition if it's Matricula/Rematricula AND History is Empty?
+    ' User said: "Se não tiver um livro anterior registrado ali no histórico... palavra desconhecido".
+    
+    Dim historicoVazio As Boolean: historicoVazio = (lstHistorico.ListCount = 0)
+    Dim deveRegistrarHistorico As Boolean
+    deveRegistrarHistorico = (livroMudou And ehMatriculaOuRematricula) Or (ehMatriculaOuRematricula And historicoVazio)
+    
+    ' Se deve registrar -> confirmacao
+    If deveRegistrarHistorico Then
         Dim livroAntigoNome As String: livroAntigoNome = NomeLivroPorID(mLivroAntigoID)
         Dim livroNovoNome As String: livroNovoNome = NomeLivroPorID(mIDLivroSelecionado)
         If Len(livroAntigoNome) = 0 Then livroAntigoNome = "(nenhum)"
@@ -887,9 +927,10 @@ Private Sub btnSalvar_Click()
     ws.Cells(linhaGravar, 11).Value = Trim(txtObs.Value)
     
     ' ============================================================
-    ' AUTO-HISTORICO: inserir evento se livro mudou + mat/remat
     ' ============================================================
-    If livroMudou And ehMatriculaOuRematricula Then
+    ' AUTO-HISTORICO: inserir evento
+    ' ============================================================
+    If deveRegistrarHistorico Then
         Dim idTipoOcorrencia As Long
         idTipoOcorrencia = BuscarTipoOcorrenciaPorNome(nomeContratoAtual)
         
@@ -905,10 +946,19 @@ Private Sub btnSalvar_Click()
         Dim livNovNome As String: livNovNome = NomeLivroPorID(mIDLivroSelecionado)
         
         ' Validacao: so mostrar "de -> para" se aluno tinha livro anterior
-        If Len(livAntNome) > 0 Then
-            obsAuto = "De " & livAntNome & " " & ChrW(8594) & " " & livNovNome
+        
+        Dim isMatricula As Boolean
+        isMatricula = (InStr(1, LCase(nomeContratoAtual), "rematr") = 0)
+        
+        If isMatricula Then
+             obsAuto = livNovNome
         Else
-            obsAuto = "De (desconhecido) " & ChrW(8594) & " " & livNovNome
+             ' Rematricula
+             If Len(livAntNome) > 0 Then
+                 obsAuto = "De " & livAntNome & " " & ChrW(8594) & " " & livNovNome
+             Else
+                 obsAuto = "De (desconhecido) " & ChrW(8594) & " " & livNovNome
+             End If
         End If
         
         InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoOcorrencia, dataEvento, obsAuto
@@ -934,7 +984,7 @@ Private Sub btnSalvar_Click()
     mEditando = True: mLinhaAtual = linhaGravar: txtID.Enabled = False
     mFormModificado = False
     
-    If livroMudou And ehMatriculaOuRematricula Then
+    If deveRegistrarHistorico Then
         CarregarHistorico CLng(idStr)
         Feedback "Aluno salvo + historico registrado automaticamente!", False
     Else
@@ -1307,14 +1357,22 @@ Private Sub AutoFormatarData(txt As MSForms.TextBox)
         If c >= "0" And c <= "9" Then digits = digits & c
     Next ii
     
-    ' Limitar a 8 digitos (ddmmyyyy)
-    If Len(digits) > 8 Then digits = Left(digits, 8)
+    ' Limitar a 12 digitos (ddmmyyyyhhmm)
+    If Len(digits) > 12 Then digits = Left(digits, 12)
     
-    ' Montar com barras
+    ' Montar com barras e hora
     Dim resultado As String: resultado = ""
     If Len(digits) >= 1 Then resultado = Left(digits, IIf(Len(digits) >= 2, 2, Len(digits)))
     If Len(digits) >= 3 Then resultado = resultado & "/" & Mid(digits, 3, IIf(Len(digits) >= 4, 2, Len(digits) - 2))
-    If Len(digits) >= 5 Then resultado = resultado & "/" & Mid(digits, 5)
+    If Len(digits) >= 5 Then resultado = resultado & "/" & Mid(digits, 5, IIf(Len(digits) >= 8, 4, Len(digits) - 4))
+    
+    ' Hora (apos 8 digitos de data)
+    If Len(digits) >= 9 Then
+        resultado = resultado & " " & Mid(digits, 9, IIf(Len(digits) >= 10, 2, Len(digits) - 8))
+    End If
+    If Len(digits) >= 11 Then
+        resultado = resultado & ":" & Mid(digits, 11)
+    End If
     
     If resultado <> s Then
         mSuprimirDataFormat = True
