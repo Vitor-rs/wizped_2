@@ -669,6 +669,11 @@ Private Sub CarregarAluno(linhaAluno As Long)
     Dim vipVal As Variant: vipVal = ws.Cells(linhaAluno, 8).Value
     chkVIP.Value = IIf(IsEmpty(vipVal) Or IsNull(vipVal), False, CBool(vipVal))
     
+    ' Active State (Col 12)
+    Dim ativoVal As Variant: ativoVal = ws.Cells(linhaAluno, 12).Value
+    tglAtivo.Value = IIf(IsEmpty(ativoVal) Or IsNull(ativoVal), True, CBool(ativoVal))
+    AtualizarVisualAtivo
+    
     SelecionarCombo cmbStatus, ws.Cells(linhaAluno, 3).Value
     ' Default Status for Imported: if empty or invalid, default to Ativo (1)
     If cmbStatus.ListIndex = -1 Then
@@ -897,6 +902,18 @@ Private Sub btnSalvar_Click()
         If Not encontrou Then linhaGravar = lastRow + 1
     End If
     
+    ' Validacao Active State antes de gravar
+    If Not tglAtivo.Value Then
+        If cmbStatus.ListIndex >= 0 Then
+            Dim stTx As String: stTx = LCase(Trim(cmbStatus.List(cmbStatus.ListIndex, 1)))
+            If stTx = "ativo" Then
+                MsgBox "O aluno está com status 'Ativo'." & vbCrLf & _
+                       "Para desativar o cadastro, altere o status para 'Desistente' ou 'Trancado'.", vbExclamation, "Validação"
+                Exit Sub
+            End If
+        End If
+    End If
+
     ' Gravar campos
     ws.Cells(linhaGravar, 1).Value = CLng(idStr)
     ws.Cells(linhaGravar, 2).Value = Trim(txtNome.Value)
@@ -925,6 +942,7 @@ Private Sub btnSalvar_Click()
     End If
     
     ws.Cells(linhaGravar, 11).Value = Trim(txtObs.Value)
+    ws.Cells(linhaGravar, 12).Value = tglAtivo.Value
     
     ' ============================================================
     ' ============================================================
@@ -1005,6 +1023,21 @@ Private Sub btnExcluir_Click()
     If MsgBox("Excluir " & txtNome.Value & "?" & vbCrLf & _
               "Esta acao nao pode ser desfeita.", _
               vbQuestion + vbYesNo, "Confirmar") = vbNo Then Exit Sub
+    
+    ' Validacao Active State
+    Dim ativoVal As Boolean: ativoVal = True
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Alunos")
+    If Not IsEmpty(ws.Cells(mLinhaAtual, 12).Value) Then ativoVal = CBool(ws.Cells(mLinhaAtual, 12).Value)
+    
+    If ativoVal Then
+        MsgBox "Este aluno está com cadastro ATIVO." & vbCrLf & _
+               "Para excluir, primeiro DESATIVE o cadastro.", vbExclamation, "Segurança"
+        Exit Sub
+    End If
+    
+    If MsgBox("ATENCAO: O cadastro está desativado." & vbCrLf & _
+              "Deseja EXCLUIR DEFINITIVAMENTE todos os dados?" & vbCrLf & _
+              "(Histórico, Agenda, Vínculos serão apagados)", vbCritical + vbYesNo, "Confirmar Exclusão") = vbNo Then Exit Sub
     
     ' Cascata: Remover horarios
     Dim wsA As Worksheet: Set wsA = ThisWorkbook.Sheets("BD_Agenda")
@@ -1261,6 +1294,7 @@ Private Sub LimparForm()
     
     txtID.Value = "": txtID.Enabled = True
     txtNome.Value = "": txtData.Value = "": txtObs.Value = ""
+    tglAtivo.Value = True: AtualizarVisualAtivo
     
     mSuprimirBusca = True: txtBusca.Value = "": mSuprimirBusca = False
     mSuprimirLivro = True: txtLivro.Value = "": mSuprimirLivro = False
@@ -1864,4 +1898,24 @@ End Sub
 Private Sub FeedbackHist(msg As String, isErro As Boolean)
     lblFeedbackHist.Caption = msg
     lblFeedbackHist.ForeColor = IIf(isErro, &HFF&, &H8000&)
+End Sub
+
+' ===========================================================
+'  ACTIVE STATE TOGGLE
+' ===========================================================
+
+Private Sub tglAtivo_Click()
+    AtualizarVisualAtivo
+End Sub
+
+Private Sub AtualizarVisualAtivo()
+    If tglAtivo.Value Then
+        tglAtivo.Caption = "CADASTRO ATIVO"
+        tglAtivo.BackColor = &HC000& ' Green
+        tglAtivo.ForeColor = &HFFFFFF
+    Else
+        tglAtivo.Caption = "DESATIVADO"
+        tglAtivo.BackColor = &HFF&   ' Red
+        tglAtivo.ForeColor = &HFFFFFF
+    End If
 End Sub

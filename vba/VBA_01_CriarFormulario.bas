@@ -105,7 +105,7 @@ Sub CriarFormulario()
     With ctrl: .Caption = "Experiencia": .Left = 180: .Top = y: .Width = 76: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblData")
-    With ctrl: .Caption = "Data Inicio": .Left = 445: .Top = y: .Width = 76: .Height = LH
+    With ctrl: .Caption = "Data Ação": .Left = 445: .Top = y: .Width = 76: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtLivro")
@@ -182,6 +182,12 @@ Sub CriarFormulario()
     With ctrl: .Left = 140: .Top = y: .Width = 568: .Height = CH
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    
+    ' Toggle Button Ativo
+    Set ctrl = pg0.Controls.Add("Forms.ToggleButton.1", "tglAtivo")
+    With ctrl: .Caption = "CADASTRO ATIVO": .Left = 140: .Top = y + CH + 4: .Width = 140: .Height = 24
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True
+        .Value = True: .BackColor = &HC000&: .ForeColor = &HFFFFFF: End With
     y = y + 76
     
     ' --- AGENDA ---
