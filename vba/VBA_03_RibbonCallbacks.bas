@@ -106,9 +106,9 @@ Public Sub OnSobre(control As IRibbonControl)
            "Alunos cadastrados: " & _
            (ThisWorkbook.Sheets("BD_Alunos").Cells( _
             ThisWorkbook.Sheets("BD_Alunos").Rows.Count, 1).End(xlUp).Row - 1) & vbCrLf & _
-           "Professores: " & _
-           (ThisWorkbook.Sheets("BD_Professores").Cells( _
-            ThisWorkbook.Sheets("BD_Professores").Rows.Count, 1).End(xlUp).Row - 1) & vbCrLf & _
+           "Funcionarios: " & _
+           (ThisWorkbook.Sheets("BD_Funcionarios").Cells( _
+            ThisWorkbook.Sheets("BD_Funcionarios").Rows.Count, 1).End(xlUp).Row - 1) & vbCrLf & _
            "Livros ativos: " & _
            Application.WorksheetFunction.CountIf( _
             ThisWorkbook.Sheets("BD_Livros").Columns(6), True)

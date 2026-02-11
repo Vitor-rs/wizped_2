@@ -4,7 +4,7 @@ Attribute VB_Name = "mod_CriarFormulario"
 ' Execute CriarFormulario() UMA VEZ, depois delete este modulo.
 '
 ' LAYOUT v8: Compacto (750x470), Tipo ao lado de Contrato,
-'            Obs ao lado de Professores, Agenda corrigida
+'            Obs ao lado de Funcionarios, Agenda corrigida, Historico redesenhado
 ' ===========================================================
 
 Sub CriarFormulario()
@@ -164,15 +164,15 @@ Sub CriarFormulario()
         .ForeColor = GOLD: .BackStyle = 0: End With
     y = y + CH + 4
     
-    ' --- ROW 4: Professores (left) + Obs (right) ---
-    Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblProfessor")
+    ' --- ROW 4: Funcionarios (left) + Obs (right) ---
+    Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblFuncionario")
     With ctrl: .Caption = "Professores": .Left = 4: .Top = y: .Width = 80: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblObs")
     With ctrl: .Caption = "Obs": .Left = 140: .Top = y: .Width = 30: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
-    Set ctrl = pg0.Controls.Add("Forms.ListBox.1", "lstProfessores")
+    Set ctrl = pg0.Controls.Add("Forms.ListBox.1", "lstFuncionarios")
     With ctrl: .Left = 4: .Top = y: .Width = 126: .Height = 72
         .ColumnCount = 2: .ColumnWidths = "0;105"
         .MultiSelect = 1: .ListStyle = 1
@@ -227,12 +227,26 @@ Sub CriarFormulario()
     ' =====================================================
     Dim pg1 As Object: Set pg1 = mp.Pages(1)
     y = 4
+    ' Header labels acima do ListBox
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColDataHora")
+    With ctrl: .Caption = "Data/Hora": .Left = 4: .Top = y: .Width = 120: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColEvento")
+    With ctrl: .Caption = "Evento": .Left = 124: .Top = y: .Width = 120: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColDetalhes")
+    With ctrl: .Caption = "Detalhes": .Left = 244: .Top = y: .Width = 340: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColResponsavel")
+    With ctrl: .Caption = "Responsavel": .Left = 584: .Top = y: .Width = 120: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    y = y + LH + 2
     Set ctrl = pg1.Controls.Add("Forms.ListBox.1", "lstHistorico")
-    With ctrl: .Left = 4: .Top = y: .Width = 708: .Height = 160
-        .ColumnCount = 5: .ColumnWidths = "0;70;110;200;320"
+    With ctrl: .Left = 4: .Top = y: .Width = 708: .Height = 148
+        .ColumnCount = 5: .ColumnWidths = "0;120;120;340;120"
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
-    y = y + 164
+    y = y + 152
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblSecaoAddHist")
     With ctrl: .Caption = "Registrar Evento": .Left = 4: .Top = y: .Width = 200: .Height = 16
         .Font.Name = FN: .Font.Size = FS_T: .Font.Bold = True: .BackStyle = 0: End With
@@ -241,18 +255,15 @@ Sub CriarFormulario()
     With ctrl: .Caption = "": .Left = 4: .Top = y: .Width = 708: .Height = 1
         .BackColor = LC: .BackStyle = 1: End With
     y = y + 6
-    ' Row: Tipo + Livro + Data + Obs (all on one row)
+    ' Row: Tipo + Obs + Responsavel
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblTipoOcorrencia")
     With ctrl: .Caption = "Tipo": .Left = 4: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
-    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblLivroHist")
-    With ctrl: .Caption = "Livro": .Left = 180: .Top = y: .Width = 40: .Height = LH
-        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
-    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblDataHist")
-    With ctrl: .Caption = "Data": .Left = 356: .Top = y: .Width = 40: .Height = LH
-        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblObsHist")
-    With ctrl: .Caption = "Obs": .Left = 460: .Top = y: .Width = 30: .Height = LH
+    With ctrl: .Caption = "Obs": .Left = 180: .Top = y: .Width = 30: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblResponsavel")
+    With ctrl: .Caption = "Responsavel": .Left = 480: .Top = y: .Width = 80: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbTipoOcorrencia")
@@ -260,17 +271,13 @@ Sub CriarFormulario()
         .ColumnCount = 2: .ColumnWidths = "0;160": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
-    Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbLivroHist")
-    With ctrl: .Left = 180: .Top = y: .Width = 165: .Height = CH
-        .ColumnCount = 2: .ColumnWidths = "0;160": .BoundColumn = 1: .TextColumn = 2: .Style = 2
-        .Font.Name = FN: .Font.Size = FS
-        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
-    Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtDataHist")
-    With ctrl: .Left = 356: .Top = y: .Width = 90: .Height = CH
-        .Font.Name = FN: .Font.Size = FS
-        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtObsHist")
-    With ctrl: .Left = 460: .Top = y: .Width = 252: .Height = CH
+    With ctrl: .Left = 180: .Top = y: .Width = 290: .Height = CH
+        .Font.Name = FN: .Font.Size = FS
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbResponsavel")
+    With ctrl: .Left = 480: .Top = y: .Width = 230: .Height = CH
+        .ColumnCount = 2: .ColumnWidths = "0;225": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     y = y + CH + 6
@@ -325,7 +332,7 @@ Sub CriarFormulario()
         .Visible = False: .BackColor = WHITE
         .SpecialEffect = 0: .BorderStyle = 1: End With
     
-    MsgBox "frmAlunos v8 criado!" & vbCrLf & _
+    MsgBox "frmAlunos v9 criado!" & vbCrLf & _
            "1. F7 > cole VBA_02" & vbCrLf & _
            "2. Delete este modulo", vbInformation, "Wizped"
 End Sub

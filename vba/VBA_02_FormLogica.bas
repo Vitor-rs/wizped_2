@@ -106,13 +106,15 @@ Private Sub CarregarLookups()
         cmbContrato.List(cmbContrato.ListCount - 1, 1) = ws.Cells(r, 2).Value
     Next r
     
-    ' Professores (ListBox MultiSelect)
-    Set ws = ThisWorkbook.Sheets("BD_Professores")
-    lstProfessores.Clear
+    ' Funcionarios (ListBox MultiSelect — filtrar por Funcao=Professor)
+    Set ws = ThisWorkbook.Sheets("BD_Funcionarios")
+    lstFuncionarios.Clear
     For r = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-        lstProfessores.AddItem
-        lstProfessores.List(lstProfessores.ListCount - 1, 0) = ws.Cells(r, 1).Value
-        lstProfessores.List(lstProfessores.ListCount - 1, 1) = ws.Cells(r, 2).Value
+        If LCase(CStr(ws.Cells(r, 3).Value)) = "professor" Then
+            lstFuncionarios.AddItem
+            lstFuncionarios.List(lstFuncionarios.ListCount - 1, 0) = ws.Cells(r, 1).Value
+            lstFuncionarios.List(lstFuncionarios.ListCount - 1, 1) = ws.Cells(r, 2).Value
+        End If
     Next r
     
     ' Historico: TipoOcorrencia
@@ -124,15 +126,13 @@ Private Sub CarregarLookups()
         cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListCount - 1, 1) = ws.Cells(r, 2).Value
     Next r
     
-    ' Historico: Livro (reutiliza BD_Livros)
-    Set ws = ThisWorkbook.Sheets("BD_Livros")
-    cmbLivroHist.Clear
+    ' Historico: Responsavel (dropdown de todos os funcionarios)
+    Set ws = ThisWorkbook.Sheets("BD_Funcionarios")
+    cmbResponsavel.Clear
     For r = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-        If ws.Cells(r, 6).Value = True Then
-            cmbLivroHist.AddItem
-            cmbLivroHist.List(cmbLivroHist.ListCount - 1, 0) = ws.Cells(r, 1).Value
-            cmbLivroHist.List(cmbLivroHist.ListCount - 1, 1) = ws.Cells(r, 2).Value
-        End If
+        cmbResponsavel.AddItem
+        cmbResponsavel.List(cmbResponsavel.ListCount - 1, 0) = ws.Cells(r, 1).Value
+        cmbResponsavel.List(cmbResponsavel.ListCount - 1, 1) = ws.Cells(r, 2).Value
     Next r
     
     cmbDia.Clear
@@ -664,8 +664,8 @@ Private Sub CarregarAluno(linhaAluno As Long)
     SelecionarCombo cmbContrato, ws.Cells(linhaAluno, 4).Value
     mSuprimirContratoChange = False
     
-    ' Professores (N:N via BD_Vinculo_Professor)
-    CarregarProfessoresAluno ws.Cells(linhaAluno, 1).Value
+    ' Funcionarios/Professores (N:N via BD_Vinculo_Professor)
+    CarregarFuncionariosAluno ws.Cells(linhaAluno, 1).Value
     
     ' Data
     If IsDate(ws.Cells(linhaAluno, 10).Value) Then
@@ -861,8 +861,8 @@ Private Sub btnSalvar_Click()
     ws.Cells(linhaGravar, 8).Value = chkVIP.Value
     GravarCombo ws, linhaGravar, 3, cmbStatus
     GravarCombo ws, linhaGravar, 4, cmbContrato
-    ' Professor N:N (grava em BD_Vinculo_Professor)
-    SalvarProfessoresAluno CLng(idStr)
+    ' Funcionario/Professor N:N (grava em BD_Vinculo_Professor)
+    SalvarFuncionariosAluno CLng(idStr)
     
     If Len(Trim(txtData.Value)) > 0 Then
         If IsDate(txtData.Value) Then
@@ -896,9 +896,9 @@ Private Sub btnSalvar_Click()
         
         ' Validacao: so mostrar "de -> para" se aluno tinha livro anterior
         If Len(livAntNome) > 0 Then
-            obsAuto = nomeContratoAtual & ": " & livAntNome & " -> " & livNovNome
+            obsAuto = "De " & livAntNome & " para " & livNovNome
         Else
-            obsAuto = nomeContratoAtual & ": " & livNovNome
+            obsAuto = "De (desconhecido) para " & livNovNome
         End If
         
         InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoOcorrencia, dataEvento, obsAuto
@@ -909,7 +909,7 @@ Private Sub btnSalvar_Click()
             idTipoEntrega = BuscarTipoOcorrenciaPorNome("Entrega de Material")
             If idTipoEntrega > 0 Then
                 Dim obsEntrega As String
-                obsEntrega = "Entrega de Material: " & livNovNome
+                obsEntrega = livNovNome
                 InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoEntrega, dataEvento, obsEntrega
             Else
                 MsgBox "Tipo 'Entrega de Material' nao encontrado em BD_TipoOcorrencia." & vbCrLf & _
@@ -1209,10 +1209,10 @@ Private Sub LimparForm()
     cmbStatus.ListIndex = -1: cmbContrato.ListIndex = -1
     cmbDia.ListIndex = -1: cmbHora.Clear
     
-    ' Deselecionar todos os professores
+    ' Deselecionar todos os funcionarios
     Dim i As Long
-    For i = 0 To lstProfessores.ListCount - 1
-        lstProfessores.Selected(i) = False
+    For i = 0 To lstFuncionarios.ListCount - 1
+        lstFuncionarios.Selected(i) = False
     Next i
     
     chkVIP.Value = False
@@ -1223,8 +1223,8 @@ Private Sub LimparForm()
     
     ' Historico
     lstHistorico.Clear
-    cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
-    txtDataHist.Value = "": txtObsHist.Value = ""
+    cmbTipoOcorrencia.ListIndex = -1: cmbResponsavel.ListIndex = -1
+    txtObsHist.Value = ""
     lblFeedbackHist.Caption = ""
     mHistoricoEditandoID = 0
     btnAddHist.Caption = "+ Registrar"
@@ -1245,12 +1245,13 @@ Private Sub cmbContrato_Enter(): FecharOverlays: End Sub
 Private Sub txtData_Enter(): FecharOverlays: End Sub
 Private Sub txtObs_Enter(): FecharOverlays: End Sub
 Private Sub chkVIP_Enter(): FecharOverlays: End Sub
-Private Sub lstProfessores_Enter(): FecharOverlays: End Sub
+Private Sub lstFuncionarios_Enter(): FecharOverlays: End Sub
 Private Sub lstAgenda_Enter(): FecharOverlays: End Sub
 Private Sub cmbDia_Enter(): FecharOverlays: End Sub
 Private Sub cmbHora_Enter(): FecharOverlays: End Sub
 Private Sub btnAddHora_Enter(): FecharOverlays: End Sub
 Private Sub lstHistorico_Enter(): FecharOverlays: End Sub
+Private Sub cmbResponsavel_Enter(): FecharOverlays: End Sub
 Private Sub cmbTipoOcorrencia_Enter(): FecharOverlays: End Sub
 Private Sub cmbLivroHist_Enter(): FecharOverlays: End Sub
 Private Sub txtDataHist_Enter(): FecharOverlays: End Sub
@@ -1387,9 +1388,10 @@ Private Sub InserirHistoricoAuto(idAluno As Long, idLivro As Variant, idTipo As 
     End If
     
     ws.Cells(nl, 4).Value = idTipo
-    ws.Cells(nl, 5).Value = dataEvento
-    ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy"
+    ws.Cells(nl, 5).Value = Now             ' timestamp com hora
+    ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
     ws.Cells(nl, 6).Value = obs
+    ' col 7 = ID_Funcionario (vazio em auto — preenchido via UI)
 End Sub
 
 Private Function ValorCombo(cmb As MSForms.ComboBox) As Variant
@@ -1450,11 +1452,11 @@ Private Function ProximaLinhaVazia(ws As Worksheet, col As Long) As Long
 End Function
 
 ' ===========================================================
-'  PROFESSORES N:N (BD_Vinculo_Professor)
+'  FUNCIONARIOS N:N (BD_Vinculo_Professor)
 ' ===========================================================
 
-' Carrega e seleciona os professores vinculados ao aluno
-Private Sub CarregarProfessoresAluno(idAluno As Variant)
+' Carrega e seleciona os funcionarios vinculados ao aluno
+Private Sub CarregarFuncionariosAluno(idAluno As Variant)
     If IsEmpty(idAluno) Then Exit Sub
     
     Dim wsVP As Worksheet: Set wsVP = ThisWorkbook.Sheets("BD_Vinculo_Professor")
@@ -1462,26 +1464,26 @@ Private Sub CarregarProfessoresAluno(idAluno As Variant)
     
     ' Deselecionar todos
     Dim i As Long
-    For i = 0 To lstProfessores.ListCount - 1
-        lstProfessores.Selected(i) = False
+    For i = 0 To lstFuncionarios.ListCount - 1
+        lstFuncionarios.Selected(i) = False
     Next i
     
     ' Selecionar os vinculados
     Dim r As Long
     For r = 2 To lastRow
         If CStr(wsVP.Cells(r, 2).Value) = CStr(idAluno) Then
-            Dim idProf As Long: idProf = CLng(wsVP.Cells(r, 3).Value)
-            For i = 0 To lstProfessores.ListCount - 1
-                If CLng(lstProfessores.List(i, 0)) = idProf Then
-                    lstProfessores.Selected(i) = True: Exit For
+            Dim idFunc As Long: idFunc = CLng(wsVP.Cells(r, 3).Value)
+            For i = 0 To lstFuncionarios.ListCount - 1
+                If CLng(lstFuncionarios.List(i, 0)) = idFunc Then
+                    lstFuncionarios.Selected(i) = True: Exit For
                 End If
             Next i
         End If
     Next r
 End Sub
 
-' Salva os professores selecionados (delete + insert)
-Private Sub SalvarProfessoresAluno(idAluno As Long)
+' Salva os funcionarios selecionados (delete + insert)
+Private Sub SalvarFuncionariosAluno(idAluno As Long)
     Dim wsVP As Worksheet: Set wsVP = ThisWorkbook.Sheets("BD_Vinculo_Professor")
     
     ' 1. Deletar vinculos atuais (reverso)
@@ -1508,16 +1510,16 @@ Private Sub SalvarProfessoresAluno(idAluno As Long)
     If lastRow = 1 And IsEmpty(wsVP.Cells(2, 1).Value) Then nextRow = 2
     Dim nomesConcatenados As String: nomesConcatenados = ""
     Dim i As Long
-    For i = 0 To lstProfessores.ListCount - 1
-        If lstProfessores.Selected(i) Then
+    For i = 0 To lstFuncionarios.ListCount - 1
+        If lstFuncionarios.Selected(i) Then
             maxID = maxID + 1
             wsVP.Cells(nextRow, 1).Value = maxID
             wsVP.Cells(nextRow, 2).Value = idAluno
-            wsVP.Cells(nextRow, 3).Value = CLng(lstProfessores.List(i, 0))
+            wsVP.Cells(nextRow, 3).Value = CLng(lstFuncionarios.List(i, 0))
             nextRow = nextRow + 1
-            ' Concatenar nome do professor
+            ' Concatenar nome do funcionario
             If Len(nomesConcatenados) > 0 Then nomesConcatenados = nomesConcatenados & ", "
-            nomesConcatenados = nomesConcatenados & lstProfessores.List(i, 1)
+            nomesConcatenados = nomesConcatenados & lstFuncionarios.List(i, 1)
         End If
     Next i
     
@@ -1545,7 +1547,7 @@ Private Sub CarregarHistorico(idAluno As Variant)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
     Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Dim wsT As Worksheet: Set wsT = ThisWorkbook.Sheets("BD_TipoOcorrencia")
-    Dim wsL As Worksheet: Set wsL = ThisWorkbook.Sheets("BD_Livros")
+    Dim wsF As Worksheet: Set wsF = ThisWorkbook.Sheets("BD_Funcionarios")
     
     ' 1. Coletar linhas deste aluno num array temporario
     Dim count As Long: count = 0
@@ -1553,7 +1555,7 @@ Private Sub CarregarHistorico(idAluno As Variant)
     For r = 2 To lastRow
         If CStr(ws.Cells(r, 2).Value) = CStr(idAluno) Then count = count + 1
     Next r
-    If count = 0 Then txtDataHist.Value = Format(Date, "dd/mm/yyyy"): Exit Sub
+    If count = 0 Then Exit Sub
     
     ' Array: (0)=row, (1)=dateSerial para ordenar
     Dim arr() As Variant: ReDim arr(1 To count, 1 To 2)
@@ -1581,20 +1583,23 @@ Private Sub CarregarHistorico(idAluno As Variant)
         Next j
     Next i
     
-    ' 3. Preencher listbox na ordem
+    ' 3. Preencher listbox: col0=ID, col1=Data/Hora, col2=Evento, col3=Detalhes, col4=Responsavel
     For k = 1 To count
         r = CLng(arr(k, 1))
         lstHistorico.AddItem
         Dim idx As Long: idx = lstHistorico.ListCount - 1
         
+        ' Col 0: ID (hidden)
         lstHistorico.List(idx, 0) = ws.Cells(r, 1).Value
         
+        ' Col 1: Data/Hora (timestamp)
         If IsDate(ws.Cells(r, 5).Value) Then
-            lstHistorico.List(idx, 1) = Format(ws.Cells(r, 5).Value, "dd/mm/yyyy")
+            lstHistorico.List(idx, 1) = Format(ws.Cells(r, 5).Value, "dd/mm/yyyy hh:mm")
         Else
             lstHistorico.List(idx, 1) = CStr(ws.Cells(r, 5).Value)
         End If
         
+        ' Col 2: Evento (tipo de ocorrencia)
         Dim idTipo As Variant: idTipo = ws.Cells(r, 4).Value
         Dim rt As Long
         For rt = 2 To wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
@@ -1603,30 +1608,20 @@ Private Sub CarregarHistorico(idAluno As Variant)
             End If
         Next rt
         
-        Dim idLivH As Variant: idLivH = ws.Cells(r, 3).Value
-        If Not IsEmpty(idLivH) Then
-            Dim rl As Long
-            For rl = 2 To wsL.Cells(wsL.Rows.Count, 1).End(xlUp).Row
-                If CStr(wsL.Cells(rl, 1).Value) = CStr(idLivH) Then
-                    lstHistorico.List(idx, 3) = wsL.Cells(rl, 2).Value: Exit For
-                End If
-            Next rl
-        End If
+        ' Col 3: Detalhes (observacao)
+        lstHistorico.List(idx, 3) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
         
-        lstHistorico.List(idx, 4) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
+        ' Col 4: Responsavel (nome do funcionario via ID_Funcionario col 7)
+        Dim idFunc As Variant: idFunc = ws.Cells(r, 7).Value
+        If Not IsEmpty(idFunc) Then
+            Dim rf As Long
+            For rf = 2 To wsF.Cells(wsF.Rows.Count, 1).End(xlUp).Row
+                If CStr(wsF.Cells(rf, 1).Value) = CStr(idFunc) Then
+                    lstHistorico.List(idx, 4) = wsF.Cells(rf, 2).Value: Exit For
+                End If
+            Next rf
+        End If
     Next k
-    
-    txtDataHist.Value = Format(Date, "dd/mm/yyyy")
-    
-    ' Auto-preencher livro atual no cmbLivroHist
-    If Not IsEmpty(mIDLivroSelecionado) Then
-        Dim iL As Long
-        For iL = 0 To cmbLivroHist.ListCount - 1
-            If CStr(cmbLivroHist.List(iL, 0)) = CStr(CLng(mIDLivroSelecionado)) Then
-                cmbLivroHist.ListIndex = iL: Exit For
-            End If
-        Next iL
-    End If
 End Sub
 
 ' DblClick no historico: preenche campos para editar
@@ -1636,10 +1631,7 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     
     mHistoricoEditandoID = CLng(lstHistorico.List(idx, 0))
     
-    ' Data
-    txtDataHist.Value = SafeStr(lstHistorico.List(idx, 1))
-    
-    ' Tipo
+    ' Tipo (col 2 = Evento)
     Dim tipoNome As String: tipoNome = SafeStr(lstHistorico.List(idx, 2))
     Dim i As Long
     cmbTipoOcorrencia.ListIndex = -1
@@ -1649,19 +1641,19 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         End If
     Next i
     
-    ' Livro
-    Dim livroNome As String: livroNome = SafeStr(lstHistorico.List(idx, 3))
-    cmbLivroHist.ListIndex = -1
-    If Len(livroNome) > 0 Then
-        For i = 0 To cmbLivroHist.ListCount - 1
-            If CStr(cmbLivroHist.List(i, 1)) = livroNome Then
-                cmbLivroHist.ListIndex = i: Exit For
+    ' Obs (col 3 = Detalhes)
+    txtObsHist.Value = SafeStr(lstHistorico.List(idx, 3))
+    
+    ' Responsavel (col 4)
+    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 4))
+    cmbResponsavel.ListIndex = -1
+    If Len(responsavelNome) > 0 Then
+        For i = 0 To cmbResponsavel.ListCount - 1
+            If CStr(cmbResponsavel.List(i, 1)) = responsavelNome Then
+                cmbResponsavel.ListIndex = i: Exit For
             End If
         Next i
     End If
-    
-    ' Obs
-    txtObsHist.Value = SafeStr(lstHistorico.List(idx, 4))
     
     btnAddHist.Caption = "Atualizar"
     FeedbackHist "Editando evento. Clique 'Atualizar' para salvar.", False
@@ -1675,15 +1667,6 @@ Private Sub btnAddHist_Click()
         FeedbackHist "Selecione o tipo.", True: Exit Sub
     End If
     
-    ' Validar livro: deve ser o livro atual do aluno
-    If cmbLivroHist.ListIndex >= 0 And Not IsEmpty(mIDLivroSelecionado) Then
-        Dim idLivroHist As Long: idLivroHist = CLng(cmbLivroHist.List(cmbLivroHist.ListIndex, 0))
-        If idLivroHist <> CLng(mIDLivroSelecionado) Then
-            FeedbackHist "Livro diferente do cadastro. Utilize o livro atual do aluno.", True
-            Exit Sub
-        End If
-    End If
-    
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
     
     ' === MODO EDITAR ===
@@ -1691,21 +1674,14 @@ Private Sub btnAddHist_Click()
         Dim rr As Long
         For rr = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
             If CLng(ws.Cells(rr, 1).Value) = mHistoricoEditandoID Then
-                ' Livro
-                If cmbLivroHist.ListIndex >= 0 Then
-                    ws.Cells(rr, 3).Value = CLng(cmbLivroHist.List(cmbLivroHist.ListIndex, 0))
-                Else
-                    ws.Cells(rr, 3).Value = ""
-                End If
                 ' Tipo
                 ws.Cells(rr, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
-                ' Data
-                If Len(Trim(txtDataHist.Value)) > 0 And IsDate(txtDataHist.Value) Then
-                    ws.Cells(rr, 5).Value = CDate(txtDataHist.Value)
-                    ws.Cells(rr, 5).NumberFormat = "dd/mm/yyyy"
-                End If
                 ' Obs
                 ws.Cells(rr, 6).Value = Trim(txtObsHist.Value)
+                ' Responsavel
+                If cmbResponsavel.ListIndex >= 0 Then
+                    ws.Cells(rr, 7).Value = CLng(cmbResponsavel.List(cmbResponsavel.ListIndex, 0))
+                End If
                 Exit For
             End If
         Next rr
@@ -1728,18 +1704,18 @@ Private Sub btnAddHist_Click()
     ws.Cells(nl, 1).Value = maxID + 1
     ws.Cells(nl, 2).Value = CLng(txtID.Value)
     
-    If cmbLivroHist.ListIndex >= 0 Then
-        ws.Cells(nl, 3).Value = CLng(cmbLivroHist.List(cmbLivroHist.ListIndex, 0))
+    ' Livro = livro atual do aluno
+    If Not IsEmpty(mIDLivroSelecionado) Then
+        ws.Cells(nl, 3).Value = CLng(mIDLivroSelecionado)
     End If
     ws.Cells(nl, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
-    
-    If Len(Trim(txtDataHist.Value)) > 0 And IsDate(txtDataHist.Value) Then
-        ws.Cells(nl, 5).Value = CDate(txtDataHist.Value)
-        ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy"
-    Else
-        ws.Cells(nl, 5).Value = Date
-    End If
+    ws.Cells(nl, 5).Value = Now             ' timestamp automatico
+    ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
     ws.Cells(nl, 6).Value = Trim(txtObsHist.Value)
+    ' Responsavel
+    If cmbResponsavel.ListIndex >= 0 Then
+        ws.Cells(nl, 7).Value = CLng(cmbResponsavel.List(cmbResponsavel.ListIndex, 0))
+    End If
     
     CarregarHistorico CLng(txtID.Value)
     FeedbackHist "Evento registrado.", False

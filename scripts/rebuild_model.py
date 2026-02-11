@@ -36,13 +36,14 @@ RELATIONSHIPS = [
     # Agenda → Alunos, Horarios
     ("Tbl_Agenda", "ID_Aluno (SponteWeb)", "Tbl_Alunos", "ID_Aluno (SponteWeb)"),
     ("Tbl_Agenda", "Hora", "Tbl_Horarios", "Hora"),
-    # Bridge: Aluno ↔ Professor (N:N)
+    # Bridge: Aluno ↔ Funcionario (N:N)
     ("Tbl_Vinculo_Professor", "ID_Aluno", "Tbl_Alunos", "ID_Aluno (SponteWeb)"),
-    ("Tbl_Vinculo_Professor", "ID_Professor", "Tbl_Professores", "ID_Professor"),
+    ("Tbl_Vinculo_Professor", "ID_Funcionario", "Tbl_Funcionarios", "ID_Funcionario"),
     # Historico → Alunos, Livros, TipoOcorrencia
     ("Tbl_Historico", "ID_Aluno", "Tbl_Alunos", "ID_Aluno (SponteWeb)"),
     ("Tbl_Historico", "ID_Livro", "Tbl_Livros", "ID_Livro"),
     ("Tbl_Historico", "ID_TipoOcorrencia", "Tbl_TipoOcorrencia", "ID_TipoOcorrencia"),
+    ("Tbl_Historico", "ID_Funcionario", "Tbl_Funcionarios", "ID_Funcionario"),
     # FichaMensal → Alunos
     ("Tbl_FichaMensal", "ID_Aluno", "Tbl_Alunos", "ID_Aluno (SponteWeb)"),
     # Livros → Experiencia (default experience per book)

@@ -16,7 +16,7 @@ tables_map = {
     "BD_Modalidades": "Tbl_Modalidades",
     "BD_Status": "Tbl_Status",
     "BD_Contrato": "Tbl_Contrato",
-    "BD_Professores": "Tbl_Professores",
+    "BD_Funcionarios": "Tbl_Funcionarios",
     "BD_Horarios": "Tbl_Horarios",
 }
 

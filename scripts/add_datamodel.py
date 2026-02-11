@@ -12,7 +12,7 @@ TABLES = [
     "Tbl_Modalidades",
     "Tbl_Status",
     "Tbl_Contrato",
-    "Tbl_Professores",
+    "Tbl_Funcionarios",
     "Tbl_Horarios",
 ]
 
