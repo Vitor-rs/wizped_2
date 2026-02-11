@@ -268,11 +268,8 @@ End Sub
 Private Sub lstSugestoes_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, _
                                     ByVal X As Single, ByVal Y As Single)
     If lstSugestoes.ListCount = 0 Then Exit Sub
-    Dim itens As Long: itens = lstSugestoes.ListCount
-    If itens > 20 Then itens = 20
-    Dim altItem As Single: altItem = lstSugestoes.Height / itens
-    If altItem < 1 Then Exit Sub
-    Dim idx As Long: idx = Int(Y / altItem)
+    Dim altItem As Single: altItem = lstSugestoes.Font.Size + 3
+    Dim idx As Long: idx = lstSugestoes.TopIndex + Int(Y / altItem)
     If idx < 0 Then idx = 0
     If idx >= lstSugestoes.ListCount Then idx = lstSugestoes.ListCount - 1
     If lstSugestoes.ListIndex <> idx Then lstSugestoes.ListIndex = idx
@@ -382,11 +379,8 @@ End Sub
 Private Sub lstLivroSugestoes_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, _
                                          ByVal X As Single, ByVal Y As Single)
     If lstLivroSugestoes.ListCount = 0 Then Exit Sub
-    Dim itens As Long: itens = lstLivroSugestoes.ListCount
-    If itens > 20 Then itens = 20
-    Dim altItem As Single: altItem = lstLivroSugestoes.Height / itens
-    If altItem < 1 Then Exit Sub
-    Dim idx As Long: idx = Int(Y / altItem)
+    Dim altItem As Single: altItem = lstLivroSugestoes.Font.Size + 3
+    Dim idx As Long: idx = lstLivroSugestoes.TopIndex + Int(Y / altItem)
     If idx < 0 Then idx = 0
     If idx >= lstLivroSugestoes.ListCount Then idx = lstLivroSugestoes.ListCount - 1
     If lstLivroSugestoes.ListIndex <> idx Then lstLivroSugestoes.ListIndex = idx
@@ -1418,7 +1412,8 @@ End Sub
 ' Ajusta altura e mostra um ListBox overlay
 Private Sub MostrarListBox(lst As MSForms.ListBox, contItens As Long)
     If contItens > 0 Then
-        Dim alt As Single: alt = contItens * 16
+        Dim altItem As Single: altItem = lst.Font.Size + 3
+        Dim alt As Single: alt = contItens * altItem
         If alt < 32 Then alt = 32
         If alt > 220 Then alt = 220
         lst.Height = alt
