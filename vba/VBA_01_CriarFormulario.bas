@@ -255,24 +255,42 @@ Sub CriarFormulario()
     With ctrl: .Caption = "": .Left = 4: .Top = y: .Width = 708: .Height = 1
         .BackColor = LC: .BackStyle = 1: End With
     y = y + 6
-    ' Row: Tipo + Obs + Responsavel
-    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblTipoOcorrencia")
-    With ctrl: .Caption = "Tipo": .Left = 4: .Top = y: .Width = 40: .Height = LH
+    ' Row 1: Data + Tipo + Livro
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblDataHist")
+    With ctrl: .Caption = "Data": .Left = 4: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblTipoOcorrencia")
+    With ctrl: .Caption = "Tipo": .Left = 114: .Top = y: .Width = 40: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblLivroHist")
+    With ctrl: .Caption = "Livro": .Left = 274: .Top = y: .Width = 40: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    y = y + LH + 2
+    Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtDataHist")
+    With ctrl: .Left = 4: .Top = y: .Width = 100: .Height = CH
+        .Font.Name = FN: .Font.Size = FS: .MaxLength = 16
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbTipoOcorrencia")
+    With ctrl: .Left = 114: .Top = y: .Width = 150: .Height = CH
+        .ColumnCount = 2: .ColumnWidths = "0;145": .BoundColumn = 1: .TextColumn = 2: .Style = 2
+        .Font.Name = FN: .Font.Size = FS
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbLivroHist")
+    With ctrl: .Left = 274: .Top = y: .Width = 438: .Height = CH
+        .ColumnCount = 2: .ColumnWidths = "0;430": .BoundColumn = 1: .TextColumn = 2: .Style = 2
+        .Font.Name = FN: .Font.Size = FS
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    y = y + CH + 4
+    ' Row 2: Detalhes + Responsavel
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblObsHist")
-    With ctrl: .Caption = "Obs": .Left = 180: .Top = y: .Width = 30: .Height = LH
+    With ctrl: .Caption = "Detalhes": .Left = 4: .Top = y: .Width = 60: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblResponsavel")
     With ctrl: .Caption = "Responsavel": .Left = 480: .Top = y: .Width = 80: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
-    Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbTipoOcorrencia")
-    With ctrl: .Left = 4: .Top = y: .Width = 165: .Height = CH
-        .ColumnCount = 2: .ColumnWidths = "0;160": .BoundColumn = 1: .TextColumn = 2: .Style = 2
-        .Font.Name = FN: .Font.Size = FS
-        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtObsHist")
-    With ctrl: .Left = 180: .Top = y: .Width = 290: .Height = CH
+    With ctrl: .Left = 4: .Top = y: .Width = 466: .Height = CH
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbResponsavel")

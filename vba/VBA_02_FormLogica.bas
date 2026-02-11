@@ -37,6 +37,7 @@ Private mSuprimirLivro As Boolean
 Private mSuprimirDiaChange As Boolean
 Private mSuprimirContratoChange As Boolean
 Private mSuprimirDataFormat As Boolean
+Private mBackspacing As Boolean
 
 ' --- Dirty flag: detecta alteracoes nao salvas ---
 Private mFormModificado As Boolean
@@ -133,6 +134,15 @@ Private Sub CarregarLookups()
         cmbResponsavel.AddItem
         cmbResponsavel.List(cmbResponsavel.ListCount - 1, 0) = ws.Cells(r, 1).Value
         cmbResponsavel.List(cmbResponsavel.ListCount - 1, 1) = ws.Cells(r, 2).Value
+    Next r
+    
+    ' Historico: Livro
+    Set ws = ThisWorkbook.Sheets("BD_Livros")
+    cmbLivroHist.Clear
+    For r = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        cmbLivroHist.AddItem
+        cmbLivroHist.List(cmbLivroHist.ListCount - 1, 0) = ws.Cells(r, 1).Value
+        cmbLivroHist.List(cmbLivroHist.ListCount - 1, 1) = ws.Cells(r, 2).Value
     Next r
     
     cmbDia.Clear
@@ -896,9 +906,9 @@ Private Sub btnSalvar_Click()
         
         ' Validacao: so mostrar "de -> para" se aluno tinha livro anterior
         If Len(livAntNome) > 0 Then
-            obsAuto = "De " & livAntNome & " para " & livNovNome
+            obsAuto = "De " & livAntNome & " " & ChrW(8594) & " " & livNovNome
         Else
-            obsAuto = "De (desconhecido) para " & livNovNome
+            obsAuto = "De (desconhecido) " & ChrW(8594) & " " & livNovNome
         End If
         
         InserirHistoricoAuto CLng(idStr), mIDLivroSelecionado, idTipoOcorrencia, dataEvento, obsAuto
@@ -1223,8 +1233,10 @@ Private Sub LimparForm()
     
     ' Historico
     lstHistorico.Clear
-    cmbTipoOcorrencia.ListIndex = -1: cmbResponsavel.ListIndex = -1
-    txtObsHist.Value = ""
+    cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
+    cmbResponsavel.ListIndex = -1: txtObsHist.Value = ""
+    txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+    mBackspacing = False
     lblFeedbackHist.Caption = ""
     mHistoricoEditandoID = 0
     btnAddHist.Caption = "+ Registrar"
@@ -1284,6 +1296,7 @@ End Sub
 
 ' === AUTO-FORMATACAO DE DATA (barras automaticas) ===
 Private Sub AutoFormatarData(txt As MSForms.TextBox)
+    If mBackspacing Then Exit Sub
     Dim s As String: s = txt.Value
     ' Remover tudo que nao seja digito
     Dim digits As String: digits = ""
@@ -1320,6 +1333,10 @@ End Sub
 Private Sub txtDataHist_Change()
     If mSuprimirDataFormat Then Exit Sub
     AutoFormatarData txtDataHist
+End Sub
+
+Private Sub txtDataHist_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    mBackspacing = (KeyCode = 8) ' Backspace
 End Sub
 
 Private Sub SelecionarCombo(cmb As MSForms.ComboBox, valor As Variant)
@@ -1655,6 +1672,20 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         Next i
     End If
     
+    ' Data (col 1) -> txtDataHist
+    txtDataHist.Value = SafeStr(lstHistorico.List(idx, 1))
+    
+    ' Livro (nao esta na listbox, buscar na planilha)
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
+    Dim r As Long
+    For r = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        If CLng(ws.Cells(r, 1).Value) = mHistoricoEditandoID Then
+            Dim idLivro As Variant: idLivro = ws.Cells(r, 3).Value
+             SelecionarCombo cmbLivroHist, idLivro
+            Exit For
+        End If
+    Next r
+    
     btnAddHist.Caption = "Atualizar"
     FeedbackHist "Editando evento. Clique 'Atualizar' para salvar.", False
 End Sub
@@ -1666,6 +1697,9 @@ Private Sub btnAddHist_Click()
     If cmbTipoOcorrencia.ListIndex = -1 Then
         FeedbackHist "Selecione o tipo.", True: Exit Sub
     End If
+    If Not IsDate(txtDataHist.Value) Then
+        FeedbackHist "Data invalida (dd/mm/yyyy hh:mm).", True: Exit Sub
+    End If
     
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
     
@@ -1673,21 +1707,37 @@ Private Sub btnAddHist_Click()
     If mHistoricoEditandoID > 0 Then
         Dim rr As Long
         For rr = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-            If CLng(ws.Cells(rr, 1).Value) = mHistoricoEditandoID Then
-                ' Tipo
-                ws.Cells(rr, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
-                ' Obs
-                ws.Cells(rr, 6).Value = Trim(txtObsHist.Value)
-                ' Responsavel
-                If cmbResponsavel.ListIndex >= 0 Then
-                    ws.Cells(rr, 7).Value = CLng(cmbResponsavel.List(cmbResponsavel.ListIndex, 0))
-                End If
-                Exit For
+        If CLng(ws.Cells(rr, 1).Value) = mHistoricoEditandoID Then
+            ' Livro
+            If Not IsEmpty(ValorCombo(cmbLivroHist)) Then
+                 ws.Cells(rr, 3).Value = CLng(ValorCombo(cmbLivroHist))
+            Else
+                 ws.Cells(rr, 3).Value = Empty
             End If
+            ' Tipo
+            ws.Cells(rr, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
+            ' Data
+            If IsDate(txtDataHist.Value) Then
+                ws.Cells(rr, 5).Value = CDate(txtDataHist.Value)
+                ws.Cells(rr, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
+            End If
+            ' Obs
+            ws.Cells(rr, 6).Value = Trim(txtObsHist.Value)
+            ' Responsavel
+            If cmbResponsavel.ListIndex >= 0 Then
+                ws.Cells(rr, 7).Value = CLng(cmbResponsavel.List(cmbResponsavel.ListIndex, 0))
+            End If
+            Exit For
+        End If
         Next rr
         
         mHistoricoEditandoID = 0
         CarregarHistorico CLng(txtID.Value)
+        ' Limpar campos Historico (via LimparForm parcial ou manual)
+        cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
+        txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
+        txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+        btnAddHist.Caption = "+ Registrar"
         FeedbackHist "Evento atualizado.", False
         Exit Sub
     End If
@@ -1704,13 +1754,20 @@ Private Sub btnAddHist_Click()
     ws.Cells(nl, 1).Value = maxID + 1
     ws.Cells(nl, 2).Value = CLng(txtID.Value)
     
-    ' Livro = livro atual do aluno
-    If Not IsEmpty(mIDLivroSelecionado) Then
-        ws.Cells(nl, 3).Value = CLng(mIDLivroSelecionado)
+    ' Livro (da combo de historico, nao do aluno)
+    If Not IsEmpty(ValorCombo(cmbLivroHist)) Then
+        ws.Cells(nl, 3).Value = CLng(ValorCombo(cmbLivroHist))
+    Else
+        ' Fallback: se nao selecionou nada no historico, usa o do aluno?
+        ' Nao, melhor explicito. Se vazio, vazio.
+        ws.Cells(nl, 3).Value = Empty
     End If
+    
     ws.Cells(nl, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
-    ws.Cells(nl, 5).Value = Now             ' timestamp automatico
+    ' Data manual
+    ws.Cells(nl, 5).Value = CDate(txtDataHist.Value)
     ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
+    
     ws.Cells(nl, 6).Value = Trim(txtObsHist.Value)
     ' Responsavel
     If cmbResponsavel.ListIndex >= 0 Then
@@ -1718,6 +1775,12 @@ Private Sub btnAddHist_Click()
     End If
     
     CarregarHistorico CLng(txtID.Value)
+    
+    ' Limpar campos
+    cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
+    txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
+    txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+    
     FeedbackHist "Evento registrado.", False
 End Sub
 

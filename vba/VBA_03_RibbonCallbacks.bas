@@ -90,8 +90,8 @@ Public Sub OnRecriarFormulario(control As IRibbonControl)
     Next vbComp
     On Error GoTo 0
     
-    ' Recriar via CriarFormularioAlunos
-    CriarFormularioAlunos
+    ' Recriar via CriarFormulario
+    CriarFormulario
     
     MsgBox "Formulario frmAlunos recriado com sucesso!", _
            vbInformation, "Wizped Office"
