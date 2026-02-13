@@ -1386,7 +1386,11 @@ End Sub
 ' === AUTO-FORMATACAO DE DATA (barras automaticas) ===
 Private Sub AutoFormatarData(txt As MSForms.TextBox)
     If mBackspacing Then Exit Sub
+    
     Dim s As String: s = txt.Value
+    Dim oldSelStart As Long: oldSelStart = txt.SelStart
+    Dim oldLen As Long: oldLen = Len(s)
+    
     ' Remover tudo que nao seja digito
     Dim digits As String: digits = ""
     Dim c As String
@@ -1416,10 +1420,20 @@ Private Sub AutoFormatarData(txt As MSForms.TextBox)
     If resultado <> s Then
         mSuprimirDataFormat = True
         txt.Value = resultado
-        txt.SelStart = Len(resultado)
+        
+        ' Restaurar posicao do cursor considerando caracteres inseridos/removidos
+        Dim newLen As Long: newLen = Len(resultado)
+        Dim newSelStart As Long
+        newSelStart = oldSelStart + (newLen - oldLen)
+        
+        If newSelStart < 0 Then newSelStart = 0
+        If newSelStart > newLen Then newSelStart = newLen
+        
+        txt.SelStart = newSelStart
         mSuprimirDataFormat = False
     End If
 End Sub
+
 
 Private Sub txtData_Change()
     mFormModificado = True
@@ -1794,9 +1808,16 @@ Private Sub btnAddHist_Click()
     If cmbTipoOcorrencia.ListIndex = -1 Then
         FeedbackHist "Selecione o tipo.", True: Exit Sub
     End If
-    If Not IsDate(txtDataHist.Value) Then
-        FeedbackHist "Data invalida (dd/mm/yyyy hh:mm).", True: Exit Sub
-    End If
+    
+    ' Valida Data (Estrita: Dias, Meses, Ano)
+    If Not ValidarDataEstrita(txtDataHist) Then Exit Sub
+    
+    ' Valida Logica (Entrega vs Matricula)
+    Dim dataNova As Date: dataNova = CDate(txtDataHist.Value)
+    Dim tipoNovo As String: tipoNovo = cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 1)
+    
+    If Not ValidarSequenciaLogica(CLng(txtID.Value), dataNova, tipoNovo) Then Exit Sub
+
     
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
     
@@ -1954,3 +1975,117 @@ End Sub
 Private Sub lblBloqueioAtivo_Click()
     MsgBox "Preencha os campos ID e Nome primeiro.", vbInformation, "Ação Necessária"
 End Sub
+
+' ===========================================================
+'  VALIDACAO ESTRITA DE DATA E LOGICA
+' ===========================================================
+
+Private Function ValidarDataEstrita(txt As MSForms.TextBox) As Boolean
+    Dim s As String: s = Trim(txt.Value)
+    If Len(s) = 0 Then ValidarDataEstrita = False: Exit Function
+    If Not IsDate(s) Then
+        MsgBox "Data inv" & ChrW(225) & "lida. Formato: dd/mm/yyyy hh:mm", vbExclamation
+        ValidarDataEstrita = False: Exit Function
+    End If
+    
+    ' Parse parts manual para checar dias exatos
+    ' Assumindo dd/mm/yyyy hh:mm (mask garante barras e espaco)
+    Dim parts() As String: parts = Split(s, " ")
+    Dim dataPart As String: dataPart = parts(0)
+    Dim dateParts() As String: dateParts = Split(dataPart, "/")
+    
+    If UBound(dateParts) < 2 Then ValidarDataEstrita = False: Exit Function
+    Dim d As Integer: d = CInt(dateParts(0))
+    Dim m As Integer: m = CInt(dateParts(1))
+    Dim y As Integer: y = CInt(dateParts(2))
+    
+    ' Checar limites de ano
+    ' User: "1002" ou "20060" invalidos. Faixa razoavel: 1900 a 2100.
+    If y < 1900 Or y > 2100 Then
+        MsgBox "Ano " & y & " inv" & ChrW(225) & "lido no contexto.", vbExclamation
+        ValidarDataEstrita = False: Exit Function
+    End If
+    
+    ' Checar limites de mes
+    If m < 1 Or m > 12 Then
+        MsgBox "M" & ChrW(234) & "s " & m & " inv" & ChrW(225) & "lido.", vbExclamation
+        ValidarDataEstrita = False: Exit Function
+    End If
+
+    ' Checar dias no mes (considerando bissexto via DateSerial)
+    Dim diasNoMes As Integer
+    diasNoMes = Day(DateSerial(y, m + 1, 0))
+    If d > diasNoMes Then
+        MsgBox "O m" & ChrW(234) & "s " & m & "/" & y & " s" & ChrW(243) & " tem " & diasNoMes & " dias.", vbExclamation
+        ValidarDataEstrita = False: Exit Function
+    End If
+    
+    ' Checar Futuro (Mes > Mes Atual do Ano Atual)
+    ' User: "Se a pessoa colocar mes 3 (e estamos no 2)... alerta: futuro, confirma?"
+    ' Comparar data inteira com Now
+    Dim dt As Date: dt = CDate(s)
+    If dt > Now Then
+        If MsgBox("A data informada (" & s & ") " & ChrW(233) & " futura." & vbCrLf & "Confirma?", vbQuestion + vbYesNo) = vbNo Then
+            ValidarDataEstrita = False: Exit Function
+        End If
+    End If
+    
+    ValidarDataEstrita = True
+End Function
+
+Private Function ValidarSequenciaLogica(idAluno As Long, dataNova As Date, tipoNovo As String) As Boolean
+    ' Se tipo = Entrega de Material, verificar se existe Matricula ou Contrato ANTERIOR
+    If InStr(1, LCase(tipoNovo), "entrega") = 0 Then ValidarSequenciaLogica = True: Exit Function
+    
+    ' Buscar data de matricula no historico (BD_Historico)
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
+    Dim wsT As Worksheet: Set wsT = ThisWorkbook.Sheets("BD_TipoOcorrencia")
+    
+    Dim dataMatricula As Date: dataMatricula = 0
+    Dim encontrouMatricula As Boolean: encontrouMatricula = False
+    
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Dim r As Long
+    For r = 2 To lastRow
+        If CStr(ws.Cells(r, 2).Value) = CStr(idAluno) Then
+            Dim idTipo As Long: idTipo = CLng(ws.Cells(r, 4).Value)
+            
+            ' Buscar nome do tipo na tabela Lookups (ou cache se lento, mas ok aqui)
+            Dim nomeTipo As String: nomeTipo = ""
+            Dim rt As Long
+            Dim lastRowT As Long: lastRowT = wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
+            For rt = 2 To lastRowT
+                If CLng(wsT.Cells(rt, 1).Value) = idTipo Then
+                    nomeTipo = LCase(wsT.Cells(rt, 2).Value)
+                    Exit For
+                End If
+            Next rt
+            
+            If InStr(nomeTipo, "matricula") > 0 Or _
+               InStr(nomeTipo, "matr" & ChrW(237) & "cula") > 0 Or _
+               InStr(nomeTipo, "contrato") > 0 Then
+               
+                If IsDate(ws.Cells(r, 5).Value) Then
+                    Dim d As Date: d = CDate(ws.Cells(r, 5).Value)
+                    ' Pega a maior data de matricula encontrada (ultima matricula)
+                    If d > dataMatricula Then dataMatricula = d
+                    encontrouMatricula = True
+                End If
+            End If
+        End If
+    Next r
+    
+    If encontrouMatricula Then
+        ' Se Entrega for ANTES da Matricula (dataNova < dataMatricula)
+        ' User: "Entrega nao pode ser antes... saltar alerta"
+        If dataNova < dataMatricula Then
+             If MsgBox("A 'Entrega de Material' est" & ChrW(225) & " datada ANTES da 'Matr" & ChrW(237) & "cula' encontrada em " & Format(dataMatricula, "dd/mm/yyyy") & "." & vbCrLf & vbCrLf & _
+                       "Deseja continuar mesmo assim?", vbQuestion + vbYesNo + vbDefaultButton2) = vbNo Then
+                 ValidarSequenciaLogica = False: Exit Function
+             End If
+        End If
+    End If
+    
+    ValidarSequenciaLogica = True
+End Function
+
