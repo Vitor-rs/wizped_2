@@ -1,4 +1,4 @@
-Attribute VB_Name = "mod_CriarFormulario"
+' Attribute VB_Name = "mod_CriarFormulario"
 ' ===========================================================
 ' MODULO: CriarFormulario (descartavel)
 ' Execute CriarFormulario() UMA VEZ, depois delete este modulo.

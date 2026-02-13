@@ -1,4 +1,4 @@
-Attribute VB_Name = "mod_ImportarCadastro"
+' Attribute VB_Name = "mod_ImportarCadastro"
 ' ===========================================================
 ' MODULO: mod_ImportarCadastro
 ' PROPÓSITO: Importar dados de alunos do relatório Sponte PDF
@@ -364,7 +364,10 @@ Private Sub ProcessarCSV(csvPath As String)
         ws.Cells(lastRow, 2).Value = csvNome        ' Nome
         ws.Cells(lastRow, 3).Value = csvStatusID    ' Status
         ws.Cells(lastRow, 4).Value = 1              ' Contrato: Matricula
-        ws.Cells(lastRow, 6).Value = 1              ' Experiencia: Interactive
+        
+        Dim idInteractive As Long: idInteractive = GlobalBuscarIDExperiencia("Interactive")
+        If idInteractive = 0 Then idInteractive = 1
+        ws.Cells(lastRow, 6).Value = idInteractive  ' Experiencia: Interactive
         ws.Cells(lastRow, 7).Value = 1              ' Modalidade: Presencial
         ws.Cells(lastRow, 10).Value = Date           ' Data inicio: hoje
         ws.Cells(lastRow, 10).NumberFormat = "dd/mm/yyyy"
@@ -536,4 +539,26 @@ ProxRow:
     Next r
     
     BuscarNomeFuzzy = bestRow
+End Function
+
+' Busca ID da Experiencia por nome
+Public Function GlobalBuscarIDExperiencia(nome As String) As Long
+    GlobalBuscarIDExperiencia = 0
+    If Len(nome) = 0 Then Exit Function
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("BD_Experiencia")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    
+    Dim nomeNorm As String: nomeNorm = LCase(Trim(nome)) 
+    ' Nota: Aqui nao usamos RemoverAcentos pois ModImportarCadastro nao tem essa funcao helper 
+    ' e nao queremos duplicar tudo. Assumindo "Interactive" sem acentos.
+    
+    Dim r As Long
+    For r = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        If LCase(Trim(CStr(ws.Cells(r, 2).Value))) = nomeNorm Then
+            GlobalBuscarIDExperiencia = CLng(ws.Cells(r, 1).Value): Exit Function
+        End If
+    Next r
 End Function

@@ -1,4 +1,4 @@
-Attribute VB_Name = "mod_RibbonCallbacks"
+' Attribute VB_Name = "mod_RibbonCallbacks"
 ' ===========================================================
 ' MODULO: mod_RibbonCallbacks
 ' Callbacks para os botoes da Ribbon Wizped v4

@@ -1,4 +1,4 @@
-Attribute VB_Name = "Mod_Horarios"
+' Attribute VB_Name = "Mod_Horarios"
 Option Explicit
 
 ' Função para retornar um Array de horários disponíveis dado um dia da semana

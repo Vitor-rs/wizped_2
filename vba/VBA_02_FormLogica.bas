@@ -699,11 +699,15 @@ Private Sub CarregarAluno(linhaAluno As Long)
     ' Default Modalidade: Presencial (1) if empty
     If cmbModalidade.ListIndex = -1 Then SelecionarCombo cmbModalidade, 1
 
-    ' Default Experiencia: Interactive (1) (User didn't explicitly say, but usually Presencial needs it)
-    ' User said "presencial preenchido... sem necessidade de escolher".
-    ' Let's set Experiencia only if Modalidade is Presencial and Exp is empty.
+    ' Default Experiencia: Interactive (via lookup)
     If ValorCombo(cmbModalidade) = 1 And cmbExperiencia.ListIndex = -1 Then
-        SelecionarCombo cmbExperiencia, 1 ' Interactive default
+        Dim idInteractive As Long
+        idInteractive = GlobalBuscarIDExperiencia("Interactive")
+        If idInteractive > 0 Then
+            SelecionarCombo cmbExperiencia, idInteractive
+        Else
+            SelecionarCombo cmbExperiencia, 1 ' Fallback
+        End If
     End If
     
     ' Funcionarios/Professores (N:N via BD_Vinculo_Professor)
@@ -758,7 +762,9 @@ Public Sub btnNovo_Click()
     txtID.Enabled = True
     
     ' Valores padrao
-    SelecionarCombo cmbExperiencia, 1  ' Interactive
+    Dim idExpDef As Long: idExpDef = GlobalBuscarIDExperiencia("Interactive")
+    If idExpDef = 0 Then idExpDef = 1
+    SelecionarCombo cmbExperiencia, idExpDef
     SelecionarCombo cmbStatus, 1       ' Ativo
     SelecionarCombo cmbContrato, 1     ' Matricula
     SelecionarCombo cmbModalidade, 1   ' Presencial
@@ -960,7 +966,7 @@ Private Sub btnSalvar_Click()
         If Len(Trim(txtData.Value)) > 0 And IsDate(txtData.Value) Then
             dataEvento = CDate(txtData.Value)
         Else
-            dataEvento = Date
+            dataEvento = Now ' Se vazio, usa Data+Hora atual
         End If
         
         Dim obsAuto As String
@@ -1496,6 +1502,8 @@ Private Function BuscarTipoOcorrenciaPorNome(nome As String) As Long
     Next r
 End Function
 
+
+
 ' Insere registro automatico no BD_Historico
 Private Sub InserirHistoricoAuto(idAluno As Long, idLivro As Variant, idTipo As Long, dataEvento As Date, obs As String)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
@@ -1517,7 +1525,8 @@ Private Sub InserirHistoricoAuto(idAluno As Long, idLivro As Variant, idTipo As 
     End If
     
     ws.Cells(nl, 4).Value = idTipo
-    ws.Cells(nl, 5).Value = Now             ' timestamp com hora
+    ws.Cells(nl, 5).Value = dataEvento      ' Usa a data (e hora) passada por parametro
+
     ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
     ws.Cells(nl, 6).Value = obs
     ' col 7 = ID_Funcionario (vazio em auto — preenchido via UI)
