@@ -1799,7 +1799,10 @@ Private Sub CarregarHistorico(idAluno As Variant)
         Dim dtVal As Variant: dtVal = ws.Cells(r, 5).Value
         If IsDate(dtVal) Then
             If isChild Then
-                lstHistorico.List(idx, 1) = ChrW(9492) & String(12, ChrW(9472)) & " " & Format(dtVal, "hh:mm")
+                ' "dd/mm/yyyy " tem 11 chars.
+                ' Queremos alinhar a hora (hh:mm) com a hora do pai.
+                ' └ (1) + 10 tracos (─) = 11 chars.
+                lstHistorico.List(idx, 1) = ChrW(9492) & String(10, ChrW(9472)) & Format(dtVal, "hh:mm")
             Else
                 lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy hh:mm")
             End If
