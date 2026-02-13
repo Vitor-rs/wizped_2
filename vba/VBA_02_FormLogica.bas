@@ -1669,6 +1669,10 @@ End Sub
 
 Private Sub CarregarHistorico(idAluno As Variant)
     lstHistorico.Clear
+    lstHistorico.ColumnCount = 6 ' ID, Data, Hora, Evento, Detalhes, Responsavel
+    ' Larguras estimadas para alinhar Date e Time em colunas separadas
+    ' 0 (ID oculto), 60 (Data), 35 (Hora), 100 (Evento), 150 (Detalhes), 80 (Resp)
+    lstHistorico.ColumnWidths = "0 pt;60 pt;35 pt;100 pt;150 pt;80 pt"
     mHistoricoEditandoID = 0
     btnAddHist.Caption = "+ Registrar"
     If IsEmpty(idAluno) Then Exit Sub
@@ -1793,24 +1797,27 @@ Private Sub CarregarHistorico(idAluno As Variant)
         ' Col 0: ID
         lstHistorico.List(idx, 0) = ws.Cells(r, 1).Value
         
-        ' Col 1: Data/Hora
-        ' Se for filho: So hora, com desenho de L (ChrW 9492 + ChrW 9472) ocupando espaco da data
-        ' d/m/y ate h:m ocupa ~11 chars.
+        ' Col 1: Data (dd/mm/yyyy) ou L (Visual tree)
+        ' Col 2: Hora (hh:mm) - Alinhamento garantido por coluna separada
         Dim dtVal As Variant: dtVal = ws.Cells(r, 5).Value
         If IsDate(dtVal) Then
             If isChild Then
-                ' "dd/mm/yyyy " tem 11 chars.
-                ' Ajuste visual: L + 6 tracos (alinha c/ ano) + 6 espacos (alinha hora).
-                ' Mantem o L perfeito (6 tracos) e empurra a hora para direita.
-                lstHistorico.List(idx, 1) = ChrW(9492) & String(6, ChrW(9472)) & "      " & Format(dtVal, "hh:mm")
+                ' Visual Tree para filho: L + 6 tracos na Coluna de Data
+                lstHistorico.List(idx, 1) = ChrW(9492) & String(6, ChrW(9472))
+                ' Hora na Coluna de Hora (Col 2)
+                lstHistorico.List(idx, 2) = Format(dtVal, "hh:mm")
             Else
-                lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy hh:mm")
+                ' Pai: Data completa na Col 1 e Hora na Col 2 (opcional, ou tudo na 1?)
+                ' Melhor separar tambem para alinhar as horas dos pais e filhos
+                lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy")
+                lstHistorico.List(idx, 2) = Format(dtVal, "hh:mm")
             End If
         Else
             lstHistorico.List(idx, 1) = CStr(dtVal)
+            lstHistorico.List(idx, 2) = ""
         End If
         
-        ' Col 2: Evento (tipo)
+        ' Col 3: Evento (tipo)
         Dim nomeEvento As String: nomeEvento = ""
         ' Buscar nome correto (com casing original da tabela)
         Dim idT As Long: idT = CLng(ws.Cells(r, 4).Value)
@@ -1821,18 +1828,20 @@ Private Sub CarregarHistorico(idAluno As Variant)
         Next rt
         
         ' SEM indentacao no nome do evento, alinhado a esquerda
-        lstHistorico.List(idx, 2) = nomeEvento
+        lstHistorico.List(idx, 3) = nomeEvento
+
         
-        ' Col 3: Detalhes
-        lstHistorico.List(idx, 3) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
+        ' Col 4: Detalhes
+        lstHistorico.List(idx, 4) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
+
         
-        ' Col 4: Responsavel
+        ' Col 5: Responsavel
         Dim idFunc As Variant: idFunc = ws.Cells(r, 7).Value
         If Not IsEmpty(idFunc) Then
             Dim rf As Long
             For rf = 2 To wsF.Cells(wsF.Rows.Count, 1).End(xlUp).Row
                 If CStr(wsF.Cells(rf, 1).Value) = CStr(idFunc) Then
-                    lstHistorico.List(idx, 4) = wsF.Cells(rf, 2).Value: Exit For
+                    lstHistorico.List(idx, 5) = wsF.Cells(rf, 2).Value: Exit For
                 End If
             Next rf
         End If
@@ -1850,8 +1859,9 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     
     mHistoricoEditandoID = CLng(lstHistorico.List(idx, 0))
     
-    ' Tipo (col 2 = Evento)
-    Dim tipoNome As String: tipoNome = SafeStr(lstHistorico.List(idx, 2))
+    ' Tipo (col 3 = Evento) - Era Col 2
+    Dim tipoNome As String: tipoNome = SafeStr(lstHistorico.List(idx, 3))
+
     Dim i As Long
     cmbTipoOcorrencia.ListIndex = -1
     For i = 0 To cmbTipoOcorrencia.ListCount - 1
@@ -1860,11 +1870,13 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         End If
     Next i
     
-    ' Obs (col 3 = Detalhes)
-    txtObsHist.Value = SafeStr(lstHistorico.List(idx, 3))
+    ' Obs (col 4 = Detalhes) - Era Col 3
+    txtObsHist.Value = SafeStr(lstHistorico.List(idx, 4))
+
     
-    ' Responsavel (col 4)
-    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 4))
+    ' Responsavel (col 5) - Era Col 4
+    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 5))
+
     cmbResponsavel.ListIndex = -1
     If Len(responsavelNome) > 0 Then
         For i = 0 To cmbResponsavel.ListCount - 1
