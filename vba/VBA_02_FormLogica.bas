@@ -1794,13 +1794,12 @@ Private Sub CarregarHistorico(idAluno As Variant)
         lstHistorico.List(idx, 0) = ws.Cells(r, 1).Value
         
         ' Col 1: Data/Hora
-        ' Se for filho: So hora (ou indentado visualmente na data?)
-        ' User: "nao precisa colocar duas datas repetidas... so a hora"
-        ' Mas precisa alinhar.
+        ' Se for filho: So hora, com desenho de L (ChrW 9492 + ChrW 9472) ocupando espaco da data
+        ' d/m/y ate h:m ocupa ~11 chars.
         Dim dtVal As Variant: dtVal = ws.Cells(r, 5).Value
         If IsDate(dtVal) Then
             If isChild Then
-                lstHistorico.List(idx, 1) = "      " & Format(dtVal, "hh:mm")
+                lstHistorico.List(idx, 1) = ChrW(9492) & String(12, ChrW(9472)) & " " & Format(dtVal, "hh:mm")
             Else
                 lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy hh:mm")
             End If
@@ -1818,13 +1817,8 @@ Private Sub CarregarHistorico(idAluno As Variant)
             End If
         Next rt
         
-        If isChild Then
-            ' Indentacao TreeView
-            lstHistorico.List(idx, 2) = "   " & ChrW(9492) & " " & nomeEvento ' 9492 = L-shaped arrow box drawing char? Or just use "   |__"
-            ' "   |_ " ou unicode L. ChrW(9492) eh '└'.
-        Else
-            lstHistorico.List(idx, 2) = nomeEvento
-        End If
+        ' SEM indentacao no nome do evento, alinhado a esquerda
+        lstHistorico.List(idx, 2) = nomeEvento
         
         ' Col 3: Detalhes
         lstHistorico.List(idx, 3) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
