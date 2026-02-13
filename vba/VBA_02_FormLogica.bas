@@ -1800,9 +1800,9 @@ Private Sub CarregarHistorico(idAluno As Variant)
         If IsDate(dtVal) Then
             If isChild Then
                 ' "dd/mm/yyyy " tem 11 chars.
-                ' Queremos alinhar a hora (hh:mm) com a hora do pai.
-                ' └ (1) + 10 tracos (─) = 11 chars.
-                lstHistorico.List(idx, 1) = ChrW(9492) & String(10, ChrW(9472)) & Format(dtVal, "hh:mm")
+                ' Ajuste visual: L + 6 tracos (alinha c/ ano) + 6 espacos (alinha hora).
+                ' Mantem o L perfeito (6 tracos) e empurra a hora para direita.
+                lstHistorico.List(idx, 1) = ChrW(9492) & String(6, ChrW(9472)) & "      " & Format(dtVal, "hh:mm")
             Else
                 lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy hh:mm")
             End If
@@ -1874,8 +1874,9 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         Next i
     End If
     
-    ' Data (col 1) -> txtDataHist
-    txtDataHist.Value = SafeStr(lstHistorico.List(idx, 1))
+    ' Data (col 1) -> Buscar da planilha (para evitar pegar o texto formatado com L)
+    ' txtDataHist.Value sera preenchido no loop abaixo
+
     
     ' Livro (nao esta na listbox, buscar na planilha)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
@@ -1884,7 +1885,16 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         If CLng(ws.Cells(r, 1).Value) = mHistoricoEditandoID Then
             Dim idLivro As Variant: idLivro = ws.Cells(r, 3).Value
              SelecionarCombo cmbLivroHist, idLivro
+            
+            ' Carregar Data original da celula
+            If IsDate(ws.Cells(r, 5).Value) Then
+                txtDataHist.Value = Format(ws.Cells(r, 5).Value, "dd/mm/yyyy hh:mm")
+            Else
+                txtDataHist.Value = CStr(ws.Cells(r, 5).Value)
+            End If
+            
             Exit For
+
         End If
     Next r
     
