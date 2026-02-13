@@ -249,22 +249,29 @@ Sub CriarFormulario()
     Dim pg1 As Object: Set pg1 = mp.Pages(1)
     y = 4
     ' Header labels acima do ListBox
-    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColDataHora")
-    With ctrl: .Caption = "Data/Hora": .Left = 4: .Top = y: .Width = 120: .Height = LH
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColData")
+    With ctrl: .Caption = "Data": .Left = 4: .Top = y: .Width = 60: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColHora")
+    With ctrl: .Caption = "Hora": .Left = 68: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColEvento")
-    With ctrl: .Caption = "Evento": .Left = 124: .Top = y: .Width = 120: .Height = LH
+    With ctrl: .Caption = "Evento": .Left = 114: .Top = y: .Width = 100: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColDetalhes")
-    With ctrl: .Caption = "Detalhes": .Left = 244: .Top = y: .Width = 340: .Height = LH
+    With ctrl: .Caption = "Detalhes": .Left = 220: .Top = y: .Width = 240: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColDataFim")
+    With ctrl: .Caption = "Fim": .Left = 466: .Top = y: .Width = 70: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblColResponsavel")
-    With ctrl: .Caption = "Responsavel": .Left = 584: .Top = y: .Width = 120: .Height = LH
+    With ctrl: .Caption = "Responsavel": .Left = 540: .Top = y: .Width = 120: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg1.Controls.Add("Forms.ListBox.1", "lstHistorico")
     With ctrl: .Left = 4: .Top = y: .Width = 708: .Height = 148
-        .ColumnCount = 5: .ColumnWidths = "0;120;120;340;120"
+        ' Cols: 0=ID, 1=Data, 2=Hora, 3=Evento, 4=Detalhes, 5=Fim, 6=Resp
+        .ColumnCount = 7: .ColumnWidths = "0;60;45;100;240;70;120"
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     y = y + 152
@@ -276,29 +283,36 @@ Sub CriarFormulario()
     With ctrl: .Caption = "": .Left = 4: .Top = y: .Width = 708: .Height = 1
         .BackColor = LC: .BackStyle = 1: End With
     y = y + 6
-    ' Row 1: Data + Tipo + Livro
+    ' Row 1: Data + Data Fim + Tipo + Livro
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblDataHist")
-    With ctrl: .Caption = "Data": .Left = 4: .Top = y: .Width = 40: .Height = LH
+    With ctrl: .Caption = "Inicio": .Left = 4: .Top = y: .Width = 40: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblDataFimInput")
+    With ctrl: .Caption = "Fim": .Left = 94: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblTipoOcorrencia")
-    With ctrl: .Caption = "Tipo": .Left = 114: .Top = y: .Width = 40: .Height = LH
+    With ctrl: .Caption = "Tipo": .Left = 184: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg1.Controls.Add("Forms.Label.1", "lblLivroHist")
-    With ctrl: .Caption = "Livro": .Left = 274: .Top = y: .Width = 40: .Height = LH
+    With ctrl: .Caption = "Livro": .Left = 344: .Top = y: .Width = 40: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtDataHist")
-    With ctrl: .Left = 4: .Top = y: .Width = 110: .Height = CH ' Increased width for time
+    With ctrl: .Left = 4: .Top = y: .Width = 85: .Height = CH 
         .Font.Name = FN: .Font.Size = FS: .MaxLength = 16
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    Set ctrl = pg1.Controls.Add("Forms.TextBox.1", "txtDataFim")
+    With ctrl: .Left = 94: .Top = y: .Width = 85: .Height = CH 
+        .Font.Name = FN: .Font.Size = FS: .MaxLength = 10
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbTipoOcorrencia")
-    With ctrl: .Left = 120: .Top = y: .Width = 150: .Height = CH ' Shifted left
+    With ctrl: .Left = 184: .Top = y: .Width = 150: .Height = CH 
         .ColumnCount = 2: .ColumnWidths = "0;145": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg1.Controls.Add("Forms.ComboBox.1", "cmbLivroHist")
-    With ctrl: .Left = 280: .Top = y: .Width = 280: .Height = CH ' Reduced width
-        .ColumnCount = 2: .ColumnWidths = "0;270": .BoundColumn = 1: .TextColumn = 2: .Style = 2
+    With ctrl: .Left = 344: .Top = y: .Width = 220: .Height = CH 
+        .ColumnCount = 2: .ColumnWidths = "0;210": .BoundColumn = 1: .TextColumn = 2: .Style = 2
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     y = y + CH + 4

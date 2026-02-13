@@ -964,7 +964,8 @@ Private Sub btnSalvar_Click()
         
         Dim dataEvento As Date
         If Len(Trim(txtData.Value)) > 0 And IsDate(txtData.Value) Then
-            dataEvento = CDate(txtData.Value)
+            ' Fix: Preserve current time even if user enters a past date
+            dataEvento = DateValue(txtData.Value) + TimeValue(Now)
         Else
             dataEvento = Now ' Se vazio, usa Data+Hora atual
         End If
@@ -1330,7 +1331,7 @@ Private Sub LimparForm()
     lstHistorico.Clear
     cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
     cmbResponsavel.ListIndex = -1: txtObsHist.Value = ""
-    txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
+    txtDataHist.Value = "": txtDataFim.Value = ""
 
     mBackspacing = False
     lblFeedbackHist.Caption = ""
@@ -1678,13 +1679,29 @@ End Sub
 
 Private Sub CarregarHistorico(idAluno As Variant)
     lstHistorico.Clear
-    lstHistorico.ColumnCount = 6 ' ID, Data, Hora, Evento, Detalhes, Responsavel
-    ' Restaurando alinhamento com Labels:
-    ' Data (60) + Hora (60) = 120 (Total do Header)
-    lstHistorico.ColumnWidths = "0 pt;60 pt;60 pt;120 pt;340 pt;120 pt"
+    lstHistorico.Clear
+    lstHistorico.ColumnCount = 7
+    lstHistorico.ColumnWidths = "0;60;45;100;240;70;120"
     mHistoricoEditandoID = 0
     btnAddHist.Caption = "+ Registrar"
     If IsEmpty(idAluno) Then Exit Sub
+    
+    ' ... (Code to get array arr() remains same) ...
+    ' We need to keep the code up to 'For k = 1 To count' but replace the content of the CarregarHistorico population loop
+
+    ' ... existing array logic ...
+    ' Note: I cannot see the array logic here to replace it safely without replacing the whole sub or using a large chunk.
+    ' I will replace the population loop part.
+    
+    ' But first let's update header part
+    
+    ' Wait, I need to split this into two edits if I can't catch the whole specific block clearly.
+    ' The prompt allows defining start/end lines.
+    
+    ' I will target the population loop: 'For k = 1 To count'
+    
+    ' ... (Moving to next tool call for detailed loop replacement) ...
+
     
     Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
     Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
@@ -1806,19 +1823,20 @@ Private Sub CarregarHistorico(idAluno As Variant)
         ' Col 0: ID
         lstHistorico.List(idx, 0) = ws.Cells(r, 1).Value
         
-        ' Col 1: Data (dd/mm/yyyy) ou L (Visual tree)
-        ' Col 2: Hora (hh:mm) - Alinhamento garantido por coluna separada
         Dim dtVal As Variant: dtVal = ws.Cells(r, 5).Value
+        Dim dtFimVal As Variant: dtFimVal = ws.Cells(r, 8).Value ' Col 8 = Data Fim
+        
         If IsDate(dtVal) Then
             If isChild Then
-                ' Visual Tree para filho: L + 6 tracos na Coluna de Data
+                ' Col 1: Visual Tree + Data
                 lstHistorico.List(idx, 1) = ChrW(9492) & String(6, ChrW(9472))
-                ' Hora na Coluna de Hora (Col 2)
+                ' Col 2: Hora
                 lstHistorico.List(idx, 2) = Format(dtVal, "hh:mm")
             Else
-                ' Pai: Data completa na Col 1 e Hora na Col 2 (opcional, ou tudo na 1?)
-                ' Melhor separar tambem para alinhar as horas dos pais e filhos
+                ' Pai
+                ' Col 1: Data
                 lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy")
+                ' Col 2: Hora
                 lstHistorico.List(idx, 2) = Format(dtVal, "hh:mm")
             End If
         Else
@@ -1828,36 +1846,38 @@ Private Sub CarregarHistorico(idAluno As Variant)
         
         ' Col 3: Evento (tipo)
         Dim nomeEvento As String: nomeEvento = ""
-        ' Buscar nome correto (com casing original da tabela)
         Dim idT As Long: idT = CLng(ws.Cells(r, 4).Value)
         For rt = 2 To lastRowT
             If CLng(wsT.Cells(rt, 1).Value) = idT Then
                 nomeEvento = wsT.Cells(rt, 2).Value: Exit For
             End If
         Next rt
-        
-        ' SEM indentacao no nome do evento, alinhado a esquerda
         lstHistorico.List(idx, 3) = nomeEvento
-
         
         ' Col 4: Detalhes
         lstHistorico.List(idx, 4) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
-
         
-        ' Col 5: Responsavel
+        ' Col 5: Data Fim
+        If IsDate(dtFimVal) Then
+            lstHistorico.List(idx, 5) = Format(dtFimVal, "dd/mm/yyyy")
+        Else
+            lstHistorico.List(idx, 5) = ""
+        End If
+
+        ' Col 6: Responsavel
         Dim idFunc As Variant: idFunc = ws.Cells(r, 7).Value
         If Not IsEmpty(idFunc) Then
             Dim rf As Long
             For rf = 2 To wsF.Cells(wsF.Rows.Count, 1).End(xlUp).Row
                 If CStr(wsF.Cells(rf, 1).Value) = CStr(idFunc) Then
-                    lstHistorico.List(idx, 5) = wsF.Cells(rf, 2).Value: Exit For
+                    lstHistorico.List(idx, 6) = wsF.Cells(rf, 2).Value: Exit For
                 End If
             Next rf
         End If
     Next k
     
     ' Limpar default date field (UI Requirement)
-    txtDataHist.Value = ""
+    txtDataHist.Value = "": txtDataFim.Value = ""
 End Sub
 
 
@@ -1866,9 +1886,12 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     If lstHistorico.ListIndex = -1 Then Exit Sub
     Dim idx As Long: idx = lstHistorico.ListIndex
     
-    mHistoricoEditandoID = CLng(lstHistorico.List(idx, 0))
+    ' Fix Runtime Error 94: Check for Null/Empty ID
+    Dim idVal As Variant: idVal = lstHistorico.List(idx, 0)
+    If IsNull(idVal) Or IsEmpty(idVal) Or CStr(idVal) = "" Then Exit Sub
+    mHistoricoEditandoID = CLng(idVal)
     
-    ' Tipo (col 3 = Evento) - Era Col 2
+    ' Tipo (col 3 = Evento)
     Dim tipoNome As String: tipoNome = SafeStr(lstHistorico.List(idx, 3))
 
     Dim i As Long
@@ -1879,12 +1902,11 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         End If
     Next i
     
-    ' Obs (col 4 = Detalhes) - Era Col 3
+    ' Obs (col 4 = Detalhes)
     txtObsHist.Value = SafeStr(lstHistorico.List(idx, 4))
-
     
-    ' Responsavel (col 5) - Era Col 4
-    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 5))
+    ' Responsavel (col 6)
+    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 6))
 
     cmbResponsavel.ListIndex = -1
     If Len(responsavelNome) > 0 Then
@@ -1912,6 +1934,13 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
                 txtDataHist.Value = Format(ws.Cells(r, 5).Value, "dd/mm/yyyy hh:mm")
             Else
                 txtDataHist.Value = CStr(ws.Cells(r, 5).Value)
+            End If
+            
+            ' Carregar Data Fim (Col 8)
+            If IsDate(ws.Cells(r, 8).Value) Then
+                txtDataFim.Value = Format(ws.Cells(r, 8).Value, "dd/mm/yyyy")
+            Else
+                txtDataFim.Value = ""
             End If
             
             Exit For
@@ -1958,9 +1987,18 @@ Private Sub btnAddHist_Click()
             ws.Cells(rr, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
             ' Data
             If IsDate(txtDataHist.Value) Then
-                ws.Cells(rr, 5).Value = CDate(txtDataHist.Value)
+                ' Fix: Timestamp logic
+                ws.Cells(rr, 5).Value = DateValue(txtDataHist.Value) + TimeValue(Now)
                 ws.Cells(rr, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
             End If
+            ' Data Fim (Col 8)
+            If IsDate(txtDataFim.Value) Then
+                ws.Cells(rr, 8).Value = CDate(txtDataFim.Value)
+                ws.Cells(rr, 8).NumberFormat = "dd/mm/yyyy"
+            Else
+                ws.Cells(rr, 8).Value = Empty
+            End If
+            
             ' Obs
             ws.Cells(rr, 6).Value = Trim(txtObsHist.Value)
             ' Responsavel
@@ -1976,7 +2014,7 @@ Private Sub btnAddHist_Click()
         ' Limpar campos Historico (via LimparForm parcial ou manual)
         cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
         txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
-        txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
+        txtDataHist.Value = "": txtDataFim.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
 
         btnAddHist.Caption = "+ Registrar"
         FeedbackHist "Evento atualizado.", False
@@ -2005,23 +2043,34 @@ Private Sub btnAddHist_Click()
     End If
     
     ws.Cells(nl, 4).Value = CLng(cmbTipoOcorrencia.List(cmbTipoOcorrencia.ListIndex, 0))
-    ' Data manual
-    ws.Cells(nl, 5).Value = CDate(txtDataHist.Value)
+    ' Data (Col 5)
+    If IsDate(txtDataHist.Value) Then
+         ws.Cells(nl, 5).Value = DateValue(txtDataHist.Value) + TimeValue(Now)
+    Else
+         ws.Cells(nl, 5).Value = Now
+    End If
     ws.Cells(nl, 5).NumberFormat = "dd/mm/yyyy hh:mm:ss"
     
+    ' Obs (Col 6)
     ws.Cells(nl, 6).Value = Trim(txtObsHist.Value)
-    ' Responsavel
+    
+    ' Responsavel (Col 7)
     If cmbResponsavel.ListIndex >= 0 Then
         ws.Cells(nl, 7).Value = CLng(cmbResponsavel.List(cmbResponsavel.ListIndex, 0))
     End If
     
+    ' Data Fim (Col 8)
+    If IsDate(txtDataFim.Value) Then
+        ws.Cells(nl, 8).Value = CDate(txtDataFim.Value)
+        ws.Cells(nl, 8).NumberFormat = "dd/mm/yyyy"
+    End If
+    
     CarregarHistorico CLng(txtID.Value)
     
-    ' Limpar campos
+    ' Limpar
     cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
     txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
-    txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
-
+    txtDataHist.Value = "": txtDataFim.Value = ""
     
     FeedbackHist "Evento registrado.", False
 End Sub
