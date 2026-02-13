@@ -671,8 +671,12 @@ Private Sub CarregarAluno(linhaAluno As Long)
     
     ' Active State (Col 12)
     Dim ativoVal As Variant: ativoVal = ws.Cells(linhaAluno, 12).Value
-    tglAtivo.Value = IIf(IsEmpty(ativoVal) Or IsNull(ativoVal), True, CBool(ativoVal))
-    AtualizarVisualAtivo
+    If IsEmpty(ativoVal) Or IsNull(ativoVal) Then
+        optAtivo.Value = True
+    Else
+        If CBool(ativoVal) Then optAtivo.Value = True Else optInativo.Value = True
+    End If
+    VerificarBloqueioAtivo
     
     SelecionarCombo cmbStatus, ws.Cells(linhaAluno, 3).Value
     ' Default Status for Imported: if empty or invalid, default to Ativo (1)
@@ -903,7 +907,7 @@ Private Sub btnSalvar_Click()
     End If
     
     ' Validacao Active State antes de gravar
-    If Not tglAtivo.Value Then
+    If optInativo.Value Then
         If cmbStatus.ListIndex >= 0 Then
             Dim stTx As String: stTx = LCase(Trim(cmbStatus.List(cmbStatus.ListIndex, 1)))
             If stTx = "ativo" Then
@@ -942,7 +946,7 @@ Private Sub btnSalvar_Click()
     End If
     
     ws.Cells(linhaGravar, 11).Value = Trim(txtObs.Value)
-    ws.Cells(linhaGravar, 12).Value = tglAtivo.Value
+    ws.Cells(linhaGravar, 12).Value = optAtivo.Value
     
     ' ============================================================
     ' ============================================================
@@ -1294,7 +1298,8 @@ Private Sub LimparForm()
     
     txtID.Value = "": txtID.Enabled = True
     txtNome.Value = "": txtData.Value = "": txtObs.Value = ""
-    tglAtivo.Value = True: AtualizarVisualAtivo
+    optAtivo.Value = True
+    VerificarBloqueioAtivo
     
     mSuprimirBusca = True: txtBusca.Value = "": mSuprimirBusca = False
     mSuprimirLivro = True: txtLivro.Value = "": mSuprimirLivro = False
@@ -1354,7 +1359,7 @@ Private Sub txtDataHist_Enter(): FecharOverlays: End Sub
 Private Sub txtObsHist_Enter(): FecharOverlays: End Sub
 
 ' === DIRTY FLAG: marcar formulario como modificado ===
-Private Sub txtNome_Change(): mFormModificado = True: End Sub
+
 Private Sub txtObs_Change(): mFormModificado = True: End Sub
 Private Sub chkVIP_Change(): mFormModificado = True: AtualizarTipoPreview: End Sub
 Private Sub cmbExperiencia_Change(): mFormModificado = True: AtualizarTipoPreview: End Sub
@@ -1901,21 +1906,28 @@ Private Sub FeedbackHist(msg As String, isErro As Boolean)
 End Sub
 
 ' ===========================================================
-'  ACTIVE STATE TOGGLE
+'  ACTIVE STATE BLOCKING LOGIC
 ' ===========================================================
 
-Private Sub tglAtivo_Click()
-    AtualizarVisualAtivo
+Private Sub txtID_Change()
+    mFormModificado = True
+    VerificarBloqueioAtivo
 End Sub
 
-Private Sub AtualizarVisualAtivo()
-    If tglAtivo.Value Then
-        tglAtivo.Caption = "CADASTRO ATIVO"
-        tglAtivo.BackColor = &HC000& ' Green
-        tglAtivo.ForeColor = &HFFFFFF
-    Else
-        tglAtivo.Caption = "DESATIVADO"
-        tglAtivo.BackColor = &HFF&   ' Red
-        tglAtivo.ForeColor = &HFFFFFF
-    End If
+Private Sub txtNome_Change()
+    mFormModificado = True
+    VerificarBloqueioAtivo
+End Sub
+
+Private Sub VerificarBloqueioAtivo()
+    Dim bloqueado As Boolean: bloqueado = True
+    If Len(Trim(txtID.Value)) > 0 And Len(Trim(txtNome.Value)) > 0 Then bloqueado = False
+    
+    lblBloqueioAtivo.Visible = bloqueado
+    frmAtivo.Enabled = Not bloqueado
+    ' Force repaint if needed, but not critical
+End Sub
+
+Private Sub lblBloqueioAtivo_Click()
+    MsgBox "Preencha os campos ID e Nome primeiro.", vbInformation, "Ação Necessária"
 End Sub

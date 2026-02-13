@@ -105,7 +105,7 @@ Sub CriarFormulario()
     With ctrl: .Caption = "Experiencia": .Left = 180: .Top = y: .Width = 76: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblData")
-    With ctrl: .Caption = "Data Ação": .Left = 445: .Top = y: .Width = 76: .Height = LH
+    With ctrl: .Caption = "Data A" & ChrW(231) & ChrW(227) & "o": .Left = 445: .Top = y: .Width = 76: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtLivro")
@@ -179,15 +179,30 @@ Sub CriarFormulario()
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtObs")
-    With ctrl: .Left = 140: .Top = y: .Width = 568: .Height = CH
+    With ctrl: .Left = 140: .Top = y: .Width = 450: .Height = CH
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     
-    ' Toggle Button Ativo
-    Set ctrl = pg0.Controls.Add("Forms.ToggleButton.1", "tglAtivo")
-    With ctrl: .Caption = "CADASTRO ATIVO": .Left = 140: .Top = y + CH + 4: .Width = 140: .Height = 24
-        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True
-        .Value = True: .BackColor = &HC000&: .ForeColor = &HFFFFFF: End With
+    ' Frame Ativo/Inativo (Container)
+    Dim frmAtivo As Object
+    Set frmAtivo = pg0.Controls.Add("Forms.Frame.1", "frmAtivo")
+    With frmAtivo: .Caption = "": .Left = 600: .Top = y - 6: .Width = 108: .Height = 44
+        .SpecialEffect = 3: End With ' Etched
+    
+    ' Option Button: Ativo
+    Set ctrl = frmAtivo.Controls.Add("Forms.OptionButton.1", "optAtivo")
+    With ctrl: .Caption = "Ativo": .Left = 6: .Top = 4: .Width = 80: .Height = 16
+        .Font.Name = FN: .Font.Size = FS: .Value = True: End With
+
+    ' Option Button: Inativo
+    Set ctrl = frmAtivo.Controls.Add("Forms.OptionButton.1", "optInativo")
+    With ctrl: .Caption = "Desativado": .Left = 6: .Top = 22: .Width = 90: .Height = 16
+        .Font.Name = FN: .Font.Size = FS: End With
+        
+    ' Overlay Label (Bloqueio)
+    Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblBloqueioAtivo")
+    With ctrl: .Caption = "": .Left = 600: .Top = y - 6: .Width = 108: .Height = 44
+        .BackStyle = 0: .Visible = True: End With ' Transparent, Visible by default
     y = y + 76
     
     ' --- AGENDA ---
