@@ -1670,9 +1670,9 @@ End Sub
 Private Sub CarregarHistorico(idAluno As Variant)
     lstHistorico.Clear
     lstHistorico.ColumnCount = 6 ' ID, Data, Hora, Evento, Detalhes, Responsavel
-    ' Larguras estimadas para alinhar Date e Time em colunas separadas
-    ' 0 (ID oculto), 60 (Data), 35 (Hora), 100 (Evento), 150 (Detalhes), 80 (Resp)
-    lstHistorico.ColumnWidths = "0 pt;60 pt;35 pt;100 pt;150 pt;80 pt"
+    ' Restaurando alinhamento com Labels:
+    ' Data (60) + Hora (60) = 120 (Total do Header)
+    lstHistorico.ColumnWidths = "0 pt;60 pt;60 pt;120 pt;340 pt;120 pt"
     mHistoricoEditandoID = 0
     btnAddHist.Caption = "+ Registrar"
     If IsEmpty(idAluno) Then Exit Sub
