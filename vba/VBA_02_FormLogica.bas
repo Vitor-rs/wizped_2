@@ -1324,7 +1324,8 @@ Private Sub LimparForm()
     lstHistorico.Clear
     cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
     cmbResponsavel.ListIndex = -1: txtObsHist.Value = ""
-    txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+    txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
+
     mBackspacing = False
     lblFeedbackHist.Caption = ""
     mHistoricoEditandoID = 0
@@ -1685,61 +1686,150 @@ Private Sub CarregarHistorico(idAluno As Variant)
     Next r
     If count = 0 Then Exit Sub
     
-    ' Array: (0)=row, (1)=dateSerial para ordenar
-    Dim arr() As Variant: ReDim arr(1 To count, 1 To 2)
+    ' Array:
+    ' (1)=row
+    ' (2)=TimestampParaOrdenacao (Double)
+    ' (3)=OriginalTimestamp (Double)
+    ' (4)=IsChild (Boolean) - Se True, eh filho de Matricula/Contrato
+    ' (5)=NomeTipo (String) - Para identificar Matricula/Entrega
+    Dim arr() As Variant: ReDim arr(1 To count, 1 To 5)
     Dim k As Long: k = 0
+    
+    ' Cache Tipos de Ocorrencia para performance e identificar nomes
+    ' Dictionary seria ideal, mas array simples serve
+    Dim lastRowT As Long: lastRowT = wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
+    
     For r = 2 To lastRow
         If CStr(ws.Cells(r, 2).Value) = CStr(idAluno) Then
             k = k + 1
             arr(k, 1) = r
-            If IsDate(ws.Cells(r, 5).Value) Then
-                arr(k, 2) = CDbl(CDate(ws.Cells(r, 5).Value))
-            Else
-                arr(k, 2) = 0
-            End If
+            
+            Dim ts As Double: ts = 0
+            If IsDate(ws.Cells(r, 5).Value) Then ts = CDbl(CDate(ws.Cells(r, 5).Value))
+            arr(k, 2) = ts 
+            arr(k, 3) = ts
+            arr(k, 4) = False ' Default Parent
+            
+            ' Pegar Nome do Tipo
+            Dim idTipo As Long: idTipo = CLng(ws.Cells(r, 4).Value)
+            Dim nomeTipo As String: nomeTipo = ""
+            Dim rt As Long
+            For rt = 2 To lastRowT
+                If CLng(wsT.Cells(rt, 1).Value) = idTipo Then
+                    nomeTipo = LCase(wsT.Cells(rt, 2).Value): Exit For
+                End If
+            Next rt
+            arr(k, 5) = nomeTipo
         End If
     Next r
     
-    ' 2. Bubble sort por data (mais recente primeiro)
-    Dim i As Long, j As Long, tmp As Variant
+    ' 2. Agrupamento (TreeView Logic)
+    ' Se houver "Matricula" e "Entrega de Material" no MESMO DIA:
+    ' Entrega vira Child, SortTimestamp = Timestamp da Matricula (para ficarem juntos)
+    ' Se tiver varias matriculas no mesmo dia? Assume a ultima? Logica simples: Matchear pares.
+    Dim i As Long, j As Long
+    For i = 1 To count
+        ' Se eh Entrega, procurar Matricula pai
+        If InStr(arr(i, 5), "entrega") > 0 Then
+            Dim tsEntrega As Double: tsEntrega = arr(i, 3)
+            Dim diaEntrega As Long: diaEntrega = Int(tsEntrega)
+            
+            ' Procurar Matricula no mesmo dia
+            For j = 1 To count
+                If i <> j Then
+                    If InStr(arr(j, 5), "matr" & ChrW(237) & "cula") > 0 Or InStr(arr(j, 5), "matricula") > 0 Or InStr(arr(j, 5), "contrato") > 0 Then
+                        Dim tsMatr As Double: tsMatr = arr(j, 3)
+                        If Int(tsMatr) = diaEntrega Then
+                            ' Encontrou pai!
+                            arr(i, 2) = tsMatr ' Herda timestamp do pai para ordenar junto
+                            arr(i, 4) = True   ' Marca como filho (indentar)
+                            Exit For ' Acha o primeiro (ou ultimo?) pai do dia. Assume 1 matricula/dia.
+                        End If
+                    End If
+                End If
+            Next j
+        End If
+    Next i
+    
+    ' 3. Bubble sort Customizado
+    ' Criteria: SortTimestamp DESC.
+    ' Tie-breaker: Parent antes de Child (se mesmo SortTimestamp).
+    Dim tmp As Variant
     For i = 1 To count - 1
         For j = 1 To count - i
+            Dim swap As Boolean: swap = False
+            
+            ' Sort DESC por Timestamp Agrupado
             If arr(j, 2) < arr(j + 1, 2) Then
-                tmp = arr(j, 1): arr(j, 1) = arr(j + 1, 1): arr(j + 1, 1) = tmp
-                tmp = arr(j, 2): arr(j, 2) = arr(j + 1, 2): arr(j + 1, 2) = tmp
+                swap = True
+            ElseIf arr(j, 2) = arr(j + 1, 2) Then
+                ' Empate: Parent (IsChild=False) deve vir antes de Child (IsChild=True)
+                ' Como eh DESC, "Maior" vem primeiro. Parent deve ser "Maior".
+                ' Entao IsChild=False > IsChild=True?
+                ' Se arr(j) eh Child e arr(j+1) eh Parent -> Swap para subir Parent
+                If arr(j, 4) And Not arr(j + 1, 4) Then
+                    swap = True
+                End If
+            End If
+            
+            If swap Then
+                ' Trocar todas as colunas
+                Dim c As Integer
+                For c = 1 To 5
+                    tmp = arr(j, c): arr(j, c) = arr(j + 1, c): arr(j + 1, c) = tmp
+                Next c
             End If
         Next j
     Next i
     
-    ' 3. Preencher listbox: col0=ID, col1=Data/Hora, col2=Evento, col3=Detalhes, col4=Responsavel
+    ' 4. Preencher listbox
     For k = 1 To count
         r = CLng(arr(k, 1))
+        Dim isChild As Boolean: isChild = arr(k, 4)
+        
         lstHistorico.AddItem
         Dim idx As Long: idx = lstHistorico.ListCount - 1
         
-        ' Col 0: ID (hidden)
+        ' Col 0: ID
         lstHistorico.List(idx, 0) = ws.Cells(r, 1).Value
         
-        ' Col 1: Data/Hora (timestamp)
-        If IsDate(ws.Cells(r, 5).Value) Then
-            lstHistorico.List(idx, 1) = Format(ws.Cells(r, 5).Value, "dd/mm/yyyy hh:mm")
+        ' Col 1: Data/Hora
+        ' Se for filho: So hora (ou indentado visualmente na data?)
+        ' User: "nao precisa colocar duas datas repetidas... so a hora"
+        ' Mas precisa alinhar.
+        Dim dtVal As Variant: dtVal = ws.Cells(r, 5).Value
+        If IsDate(dtVal) Then
+            If isChild Then
+                lstHistorico.List(idx, 1) = "      " & Format(dtVal, "hh:mm")
+            Else
+                lstHistorico.List(idx, 1) = Format(dtVal, "dd/mm/yyyy hh:mm")
+            End If
         Else
-            lstHistorico.List(idx, 1) = CStr(ws.Cells(r, 5).Value)
+            lstHistorico.List(idx, 1) = CStr(dtVal)
         End If
         
-        ' Col 2: Evento (tipo de ocorrencia)
-        Dim idTipo As Variant: idTipo = ws.Cells(r, 4).Value
-        Dim rt As Long
-        For rt = 2 To wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
-            If CStr(wsT.Cells(rt, 1).Value) = CStr(idTipo) Then
-                lstHistorico.List(idx, 2) = wsT.Cells(rt, 2).Value: Exit For
+        ' Col 2: Evento (tipo)
+        Dim nomeEvento As String: nomeEvento = ""
+        ' Buscar nome correto (com casing original da tabela)
+        Dim idT As Long: idT = CLng(ws.Cells(r, 4).Value)
+        For rt = 2 To lastRowT
+            If CLng(wsT.Cells(rt, 1).Value) = idT Then
+                nomeEvento = wsT.Cells(rt, 2).Value: Exit For
             End If
         Next rt
         
-        ' Col 3: Detalhes (observacao)
+        If isChild Then
+            ' Indentacao TreeView
+            lstHistorico.List(idx, 2) = "   " & ChrW(9492) & " " & nomeEvento ' 9492 = L-shaped arrow box drawing char? Or just use "   |__"
+            ' "   |_ " ou unicode L. ChrW(9492) eh '└'.
+        Else
+            lstHistorico.List(idx, 2) = nomeEvento
+        End If
+        
+        ' Col 3: Detalhes
         lstHistorico.List(idx, 3) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
         
-        ' Col 4: Responsavel (nome do funcionario via ID_Funcionario col 7)
+        ' Col 4: Responsavel
         Dim idFunc As Variant: idFunc = ws.Cells(r, 7).Value
         If Not IsEmpty(idFunc) Then
             Dim rf As Long
@@ -1750,7 +1840,11 @@ Private Sub CarregarHistorico(idAluno As Variant)
             Next rf
         End If
     Next k
+    
+    ' Limpar default date field (UI Requirement)
+    txtDataHist.Value = ""
 End Sub
+
 
 ' DblClick no historico: preenche campos para editar
 Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
@@ -1854,7 +1948,8 @@ Private Sub btnAddHist_Click()
         ' Limpar campos Historico (via LimparForm parcial ou manual)
         cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
         txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
-        txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+        txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
+
         btnAddHist.Caption = "+ Registrar"
         FeedbackHist "Evento atualizado.", False
         Exit Sub
@@ -1897,7 +1992,8 @@ Private Sub btnAddHist_Click()
     ' Limpar campos
     cmbTipoOcorrencia.ListIndex = -1: cmbLivroHist.ListIndex = -1
     txtObsHist.Value = "": cmbResponsavel.ListIndex = -1
-    txtDataHist.Value = Format(Now, "dd/mm/yyyy hh:mm")
+    txtDataHist.Value = "" ' Format(Now, "dd/mm/yyyy hh:mm")
+
     
     FeedbackHist "Evento registrado.", False
 End Sub
