@@ -1909,6 +1909,29 @@ End Sub
 '  ACTIVE STATE BLOCKING LOGIC
 ' ===========================================================
 
+Private Sub optInativo_Click()
+    ' Regra: O aluno nao pode ser desativado no cadastro (Inativo)
+    ' se o Status do Contrato for Ativo (1 = Matriculado).
+    ' Necessario alterar o Status para Trancado, Desistente ou Concluido antes.
+    
+    Dim idStatus As Long: idStatus = -1
+    If cmbStatus.ListIndex >= 0 Then
+        idStatus = CLng(cmbStatus.List(cmbStatus.ListIndex, 0))
+    End If
+    
+    ' ID 1 = Ativo / Matriculado (conforme padrao em btnNovo_Click e CarregarLookups)
+    If idStatus = 1 Then
+        MsgBox "O aluno est" & ChrW(225) & " com Status 'Ativo' (ou Matriculado)." & vbCrLf & vbCrLf & _
+               "Para desativar o cadastro, altere primeiro o Status para" & vbCrLf & _
+               "Trancado, Desistente ou Conclu" & ChrW(237) & "do.", _
+               vbExclamation, "Opera" & ChrW(231) & ChrW(227) & "o Inv" & ChrW(225) & "lida"
+        
+        ' Reverter para Ativo
+        optAtivo.Value = True
+    End If
+End Sub
+
+
 Private Sub txtID_Change()
     mFormModificado = True
     VerificarBloqueioAtivo
