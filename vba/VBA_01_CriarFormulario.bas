@@ -105,7 +105,10 @@ Sub CriarFormulario()
     With ctrl: .Caption = "Experiencia": .Left = 180: .Top = y: .Width = 76: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblData")
-    With ctrl: .Caption = "Data A" & ChrW(231) & ChrW(227) & "o": .Left = 445: .Top = y: .Width = 76: .Height = LH
+    With ctrl: .Caption = "In" & ChrW(237) & "cio do curso": .Left = 445: .Top = y: .Width = 100: .Height = LH
+        .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
+    Set ctrl = pg0.Controls.Add("Forms.Label.1", "lblFimCurso")
+    With ctrl: .Caption = "Fim do curso": .Left = 560: .Top = y: .Width = 100: .Height = LH
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     y = y + LH + 2
     Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtLivro")
@@ -125,6 +128,10 @@ Sub CriarFormulario()
         .Font.Name = FN: .Font.Size = FS: .Font.Bold = True: .BackStyle = 0: End With
     Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtData")
     With ctrl: .Left = 445: .Top = y: .Width = 90: .Height = CH
+        .Font.Name = FN: .Font.Size = FS
+        .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
+    Set ctrl = pg0.Controls.Add("Forms.TextBox.1", "txtFimCurso")
+    With ctrl: .Left = 560: .Top = y: .Width = 90: .Height = CH
         .Font.Name = FN: .Font.Size = FS
         .SpecialEffect = 0: .BorderStyle = 1: .BackColor = WHITE: End With
     y = y + CH + 4

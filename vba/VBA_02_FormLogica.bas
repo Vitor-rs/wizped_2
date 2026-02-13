@@ -721,6 +721,13 @@ Private Sub CarregarAluno(linhaAluno As Long)
         txtData.Value = Format(Date, "dd/mm/yyyy")
     End If
     
+    ' Data Fim Curso (Col 13)
+    If IsDate(ws.Cells(linhaAluno, 13).Value) Then
+        txtFimCurso.Value = Format(ws.Cells(linhaAluno, 13).Value, "dd/mm/yyyy")
+    Else
+        txtFimCurso.Value = ""
+    End If
+    
     ' Obs
     txtObs.Value = IIf(IsEmpty(ws.Cells(linhaAluno, 11).Value), "", CStr(ws.Cells(linhaAluno, 11).Value))
     
@@ -949,6 +956,14 @@ Private Sub btnSalvar_Click()
             ws.Cells(linhaGravar, 10).Value = txtData.Value
         End If
     Else: ws.Cells(linhaGravar, 10).Value = Empty
+    End If
+    
+    ' Gravar Data Fim Curso (Col 13)
+    If Len(Trim(txtFimCurso.Value)) > 0 And IsDate(txtFimCurso.Value) Then
+        ws.Cells(linhaGravar, 13).Value = CDate(txtFimCurso.Value)
+        ws.Cells(linhaGravar, 13).NumberFormat = "dd/mm/yyyy"
+    Else
+        ws.Cells(linhaGravar, 13).Value = Empty
     End If
     
     ws.Cells(linhaGravar, 11).Value = Trim(txtObs.Value)
@@ -1304,7 +1319,7 @@ Private Sub LimparForm()
     mSuprimirDiaChange = False: mSuprimirContratoChange = False: mSuprimirDataFormat = False
     
     txtID.Value = "": txtID.Enabled = True
-    txtNome.Value = "": txtData.Value = "": txtObs.Value = ""
+    txtNome.Value = "": txtData.Value = "": txtFimCurso.Value = "": txtObs.Value = ""
     optAtivo.Value = True
     VerificarBloqueioAtivo
     
@@ -1443,11 +1458,7 @@ Private Sub AutoFormatarData(txt As MSForms.TextBox)
 End Sub
 
 
-Private Sub txtData_Change()
-    mFormModificado = True
-    If mSuprimirDataFormat Then Exit Sub
-    AutoFormatarData txtData
-End Sub
+    ' (Removido: duplicado, ver final do arquivo)
 
 Private Sub txtDataHist_Change()
     If mSuprimirDataFormat Then Exit Sub
@@ -1854,23 +1865,23 @@ Private Sub CarregarHistorico(idAluno As Variant)
         Next rt
         lstHistorico.List(idx, 3) = nomeEvento
         
-        ' Col 4: Detalhes
-        lstHistorico.List(idx, 4) = IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
+        ' Col 4: Detalhes (Indented)
+        lstHistorico.List(idx, 4) = "   " & IIf(IsEmpty(ws.Cells(r, 6).Value), "", CStr(ws.Cells(r, 6).Value))
         
-        ' Col 5: Data Fim
+        ' Col 5: Data Fim (Indented)
         If IsDate(dtFimVal) Then
-            lstHistorico.List(idx, 5) = Format(dtFimVal, "dd/mm/yyyy")
+            lstHistorico.List(idx, 5) = "   " & Format(dtFimVal, "dd/mm/yyyy")
         Else
             lstHistorico.List(idx, 5) = ""
         End If
 
-        ' Col 6: Responsavel
+        ' Col 6: Responsavel (Indented)
         Dim idFunc As Variant: idFunc = ws.Cells(r, 7).Value
         If Not IsEmpty(idFunc) Then
             Dim rf As Long
             For rf = 2 To wsF.Cells(wsF.Rows.Count, 1).End(xlUp).Row
                 If CStr(wsF.Cells(rf, 1).Value) = CStr(idFunc) Then
-                    lstHistorico.List(idx, 6) = wsF.Cells(rf, 2).Value: Exit For
+                    lstHistorico.List(idx, 6) = "   " & wsF.Cells(rf, 2).Value: Exit For
                 End If
             Next rf
         End If
@@ -1903,10 +1914,11 @@ Private Sub lstHistorico_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     Next i
     
     ' Obs (col 4 = Detalhes)
-    txtObsHist.Value = SafeStr(lstHistorico.List(idx, 4))
+    ' Fix: Trim leading spaces added for alignment
+    txtObsHist.Value = Trim(SafeStr(lstHistorico.List(idx, 4)))
     
     ' Responsavel (col 6)
-    Dim responsavelNome As String: responsavelNome = SafeStr(lstHistorico.List(idx, 6))
+    Dim responsavelNome As String: responsavelNome = Trim(SafeStr(lstHistorico.List(idx, 6)))
 
     cmbResponsavel.ListIndex = -1
     If Len(responsavelNome) > 0 Then
@@ -2153,6 +2165,66 @@ End Sub
 '  VALIDACAO ESTRITA DE DATA E LOGICA
 ' ===========================================================
 
+' Mascara Data para o campo txtFimCurso (Novo campo UI Principal)
+Private Sub txtFimCurso_Change()
+    If mFormModificado = False Then mFormModificado = True
+    AplicarMascaraData txtFimCurso
+End Sub
+
+' Mascara Data para o campo txtDataFim (Historico)
+Private Sub txtDataFim_Change()
+   AplicarMascaraData txtDataFim
+End Sub
+
+' Mascara Data para o campo txtData (Inicio do Curso)
+Private Sub txtData_Change()
+    mFormModificado = True
+    AplicarMascaraData txtData
+    VerificarBloqueioAtivo
+End Sub
+
+' Auto-Calculo: Quando sair do campo Inicio, calcular Fim (Inicio + 1 Ano)
+Private Sub txtData_Exit(ByVal Cancel As MSForms.ReturnBoolean)
+    If Len(txtData.Value) = 10 And IsDate(txtData.Value) Then
+        ' Se Fim estiver vazio, calcular automatico
+        If Len(Trim(txtFimCurso.Value)) = 0 Then
+            Dim dtInicio As Date: dtInicio = CDate(txtData.Value)
+            Dim dtFim As Date: dtFim = DateAdd("yyyy", 1, dtInicio)
+            txtFimCurso.Value = Format(dtFim, "dd/mm/yyyy")
+        End If
+    End If
+End Sub
+
+Private Sub AplicarMascaraData(txt As MSForms.TextBox)
+    Static executando As Boolean
+    If executando Then Exit Sub
+    executando = True
+    
+    Dim t As String: t = txt.Value
+    If Len(t) > 0 Then
+         ' Se usuario digitou apenas numeros, insere barras
+         ' Logica simples de mascara:
+         ' Limpar tudo que nao for numero
+         Dim i As Long, s As String
+         For i = 1 To Len(t)
+             If IsNumeric(Mid(t, i, 1)) Then s = s & Mid(t, i, 1)
+         Next i
+         
+         ' Recolocar barras
+         If Len(s) >= 3 Then s = Left(s, 2) & "/" & Mid(s, 3)
+         If Len(s) >= 6 Then s = Left(s, 5) & "/" & Mid(s, 6)
+         
+         ' Limitar a 10 chars (dd/mm/yyyy)
+         If Len(s) > 10 Then s = Left(s, 10)
+         
+         If t <> s Then txt.Value = s
+    End If
+    
+    executando = False
+End Sub
+
+' (ValidarDataEstrita segue abaixo...)
+
 Private Function ValidarDataEstrita(txt As MSForms.TextBox) As Boolean
     Dim s As String: s = Trim(txt.Value)
     If Len(s) = 0 Then ValidarDataEstrita = False: Exit Function
@@ -2219,30 +2291,55 @@ Private Function ValidarSequenciaLogica(idAluno As Long, dataNova As Date, tipoN
     
     Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Dim r As Long
+    ' Buscar data de matricula no historico (BD_Historico) para O MESMO LIVRO/CURSO
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Sheets("BD_Historico")
+    Dim wsT As Worksheet: Set wsT = ThisWorkbook.Sheets("BD_TipoOcorrencia")
+    
+    Dim idLivroAtual As Long: idLivroAtual = -1
+    
+    ' Precisamos saber qual o Livro deste evento.
+    ' Se for novo (mHistoricoEditandoID=0), esta na combo cmbLivroHist
+    ' Se for edicao, tb esta na combo (carregada em DblClick)
+    If cmbLivroHist.ListIndex >= 0 Then
+        idLivroAtual = CLng(cmbLivroHist.List(cmbLivroHist.ListIndex, 0))
+    End If
+    
+    If idLivroAtual = -1 Then ValidarSequenciaLogica = True: Exit Function ' Se nao tem livro, nao valida sequencia especifica
+    
+    Dim dataMatricula As Date: dataMatricula = 0
+    Dim encontrouMatricula As Boolean: encontrouMatricula = False
+    
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Dim r As Long
     For r = 2 To lastRow
         If CStr(ws.Cells(r, 2).Value) = CStr(idAluno) Then
-            Dim idTipo As Long: idTipo = CLng(ws.Cells(r, 4).Value)
-            
-            ' Buscar nome do tipo na tabela Lookups (ou cache se lento, mas ok aqui)
-            Dim nomeTipo As String: nomeTipo = ""
-            Dim rt As Long
-            Dim lastRowT As Long: lastRowT = wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
-            For rt = 2 To lastRowT
-                If CLng(wsT.Cells(rt, 1).Value) = idTipo Then
-                    nomeTipo = LCase(wsT.Cells(rt, 2).Value)
-                    Exit For
-                End If
-            Next rt
-            
-            If InStr(nomeTipo, "matricula") > 0 Or _
-               InStr(nomeTipo, "matr" & ChrW(237) & "cula") > 0 Or _
-               InStr(nomeTipo, "contrato") > 0 Then
-               
-                If IsDate(ws.Cells(r, 5).Value) Then
-                    Dim d As Date: d = CDate(ws.Cells(r, 5).Value)
-                    ' Pega a maior data de matricula encontrada (ultima matricula)
-                    If d > dataMatricula Then dataMatricula = d
-                    encontrouMatricula = True
+            ' Filtra pelo mesmo Livro (Col 3)
+            Dim idL As Variant: idL = ws.Cells(r, 3).Value
+            If Not IsEmpty(idL) And IsNumeric(idL) Then
+                If CLng(idL) = idLivroAtual Then
+                    Dim idTipo As Long: idTipo = CLng(ws.Cells(r, 4).Value)
+                    
+                    ' Buscar nome do tipo
+                    Dim nomeTipo As String: nomeTipo = ""
+                    Dim rt As Long
+                    Dim lastRowT As Long: lastRowT = wsT.Cells(wsT.Rows.Count, 1).End(xlUp).Row
+                    For rt = 2 To lastRowT
+                        If CLng(wsT.Cells(rt, 1).Value) = idTipo Then
+                            nomeTipo = LCase(wsT.Cells(rt, 2).Value)
+                            Exit For
+                        End If
+                    Next rt
+                    
+                    If InStr(nomeTipo, "matricula") > 0 Or _
+                       InStr(nomeTipo, "matr" & ChrW(237) & "cula") > 0 Or _
+                       InStr(nomeTipo, "contrato") > 0 Then
+                       
+                        If IsDate(ws.Cells(r, 5).Value) Then
+                            Dim d As Date: d = CDate(ws.Cells(r, 5).Value)
+                            If d > dataMatricula Then dataMatricula = d
+                            encontrouMatricula = True
+                        End If
+                    End If
                 End If
             End If
         End If
